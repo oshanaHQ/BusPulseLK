@@ -1,0 +1,6 @@
+@BusPulseLK_HostAddress = http://localhost:5251
+
+GET {{BusPulseLK_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
