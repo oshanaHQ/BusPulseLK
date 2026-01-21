@@ -1,4 +1,4 @@
-// app/(tabs)/owner/dashboard.tsx   ← place it in your owner tab route
+// app/(tabs)/owner/dashboard.tsx
 import React from 'react';
 import {
   View,
@@ -10,6 +10,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
 const BusOwnerDashboard = () => {
   return (
@@ -27,7 +28,10 @@ const BusOwnerDashboard = () => {
 
           {/* Action Grid */}
           <View style={styles.grid}>
-            <TouchableOpacity style={styles.card}>
+            <TouchableOpacity 
+              style={styles.card}
+              onPress={() => router.push('./manage-buses')}
+            >
               <Ionicons name="bus-outline" size={40} color="#FF6200" />
               <Text style={styles.cardText}>Manage Buses</Text>
             </TouchableOpacity>
@@ -142,7 +146,10 @@ const BusOwnerDashboard = () => {
             <Text style={[styles.tabLabel, { color: '#FF6200' }]}>Home</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tabItem}>
+          <TouchableOpacity 
+            style={styles.tabItem}
+            onPress={() => router.push('./manage-buses')}
+          >
             <Ionicons name="bus-outline" size={28} color="#AAAAAA" />
             <Text style={styles.tabLabel}>Buses</Text>
           </TouchableOpacity>

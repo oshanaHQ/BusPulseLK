@@ -10,6 +10,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
 const AdminDashboard = () => {
   return (
@@ -27,7 +28,10 @@ const AdminDashboard = () => {
 
           {/* Main Action Grid */}
           <View style={styles.grid}>
-            <TouchableOpacity style={styles.card}>
+            <TouchableOpacity 
+              style={styles.card}
+              onPress={() => router.push('./manage-routes')}
+            >
               <Ionicons name="location-outline" size={40} color="#FF6200" />
               <Text style={styles.cardText}>Manage Routes</Text>
             </TouchableOpacity>
@@ -115,14 +119,17 @@ const AdminDashboard = () => {
           </View>
         </ScrollView>
 
-        {/* Bottom Tab Bar - Home is now active */}
+        {/* Bottom Tab Bar - ONLY Home active */}
         <View style={styles.bottomTab}>
           <TouchableOpacity style={styles.tabItem}>
             <Ionicons name="home" size={28} color="#FF6200" />
             <Text style={[styles.tabLabel, { color: '#FF6200' }]}>Home</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tabItem}>
+          <TouchableOpacity 
+            style={styles.tabItem}
+            onPress={() => router.push('./manage-routes')}
+          >
             <Ionicons name="git-network-outline" size={28} color="#AAAAAA" />
             <Text style={styles.tabLabel}>Routes</Text>
           </TouchableOpacity>
