@@ -21,6 +21,18 @@ export default function RootLayout() {
         {/* ✅ TAB STACK */}
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 
+        {/* ✅ PASSENGER STACK */}
+        <Stack.Screen name="passenger" options={{ headerShown: false }} />
+
+        {/* ✅ ADMIN STACK */}
+        <Stack.Screen name="admin" options={{ headerShown: false }} />
+
+         {/* ✅ WORKER STACK */}
+        <Stack.Screen name="worker" options={{ headerShown: false }} />
+
+         {/* ✅ OWNER STACK */}
+        <Stack.Screen name="owner" options={{ headerShown: false }} />
+
         {/* ✅ MODAL */}
         <Stack.Screen
           name="modal"

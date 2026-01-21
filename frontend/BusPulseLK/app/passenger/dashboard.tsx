@@ -5,136 +5,149 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
-  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const HomeScreen = () => {
   return (
-    <>
-      <StatusBar backgroundColor="#000000" barStyle="light-content" />
-      <SafeAreaView style={styles.container}>
-        {/* Header / Search */}
-        <View style={styles.header}>
-          <Text style={styles.appTitle}>BusPulse LK</Text>
-          <TouchableOpacity style={styles.profileIcon}>
-            <Ionicons name="person-circle-outline" size={32} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
+    <SafeAreaView style={styles.container}>
+      {/* Header / Search */}
+      <View style={styles.header}>
+        <Text style={styles.appTitle}>BusPulse LK</Text>
+        <TouchableOpacity style={styles.profileIcon}>
+          <Ionicons name="person-circle-outline" size={32} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={20} color="#888" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search buses by destination, time, or bus name"
-            placeholderTextColor="#666"
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Ionicons
+          name="search-outline"
+          size={20}
+          color="#888"
+          style={styles.searchIcon}
+        />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search buses by destination, time, or bus name"
+          placeholderTextColor="#666"
+        />
+      </View>
+
+      {/* Feature Cards Grid */}
+      <View style={styles.grid}>
+        <TouchableOpacity style={styles.card}>
+          <Ionicons name="search" size={40} color="#FF6200" />
+          <Text style={styles.cardText}>Search Buses</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.card}>
+          <Ionicons
+            name="shield-checkmark-outline"
+            size={40}
+            color="#FF6200"
           />
-        </View>
+          <Text style={styles.cardText}>Live Bus Status</Text>
+        </TouchableOpacity>
 
-        {/* Feature Cards Grid */}
-        <View style={styles.grid}>
-          <TouchableOpacity style={styles.card}>
-            <Ionicons name="search" size={40} color="#FF6200" />
-            <Text style={styles.cardText}>Search Buses</Text>
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.card}>
+          <Ionicons name="heart-outline" size={40} color="#FF6200" />
+          <Text style={styles.cardText}>Favorite Buses</Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.card}>
-            <Ionicons name="shield-checkmark-outline" size={40} color="#FF6200" />
-            <Text style={styles.cardText}>Live Bus Status</Text>
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.card}>
+          <Ionicons name="star-outline" size={40} color="#FF6200" />
+          <Text style={styles.cardText}>My Ratings</Text>
+        </TouchableOpacity>
+      </View>
 
-          <TouchableOpacity style={styles.card}>
-            <Ionicons name="heart-outline" size={40} color="#FF6200" />
-            <Text style={styles.cardText}>Favorite Buses</Text>
-          </TouchableOpacity>
+      {/* Favorite Buses Section */}
+      <View style={styles.favoritesHeader}>
+        <Text style={styles.sectionTitle}>Favorite Buses</Text>
+        <TouchableOpacity>
+          <Text style={styles.viewAll}>View All</Text>
+        </TouchableOpacity>
+      </View>
 
-          <TouchableOpacity style={styles.card}>
-            <Ionicons name="star-outline" size={40} color="#FF6200" />
-            <Text style={styles.cardText}>My Ratings</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Favorite Buses Section */}
-        <View style={styles.favoritesHeader}>
-          <Text style={styles.sectionTitle}>Favorite Buses</Text>
-          <TouchableOpacity>
-            <Text style={styles.viewAll}>View All</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={styles.favoritesScroll}>
-          <TouchableOpacity style={styles.busCard}>
-            <View style={styles.busInfo}>
-              <Text style={styles.busName}>Expresso 138</Text>
-              <Text style={styles.busRoute}>Colombo - Kandy</Text>
-              <View style={[styles.statusBadge, { backgroundColor: '#2E7D32' }]}>
-                <Text style={styles.statusText}>On Time</Text>
-              </View>
+      <ScrollView style={styles.favoritesScroll}>
+        <TouchableOpacity style={styles.busCard}>
+          <View style={styles.busInfo}>
+            <Text style={styles.busName}>Expresso 138</Text>
+            <Text style={styles.busRoute}>Colombo - Kandy</Text>
+            <View
+              style={[styles.statusBadge, { backgroundColor: '#2E7D32' }]}
+            >
+              <Text style={styles.statusText}>On Time</Text>
             </View>
-            <Ionicons name="heart" size={24} color="#FF6200" />
-          </TouchableOpacity>
+          </View>
+          <Ionicons name="heart" size={24} color="#FF6200" />
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.busCard}>
-            <View style={styles.busInfo}>
-              <Text style={styles.busName}>Intercity 245</Text>
-              <Text style={styles.busRoute}>Colombo - Galle</Text>
-              <View style={[styles.statusBadge, { backgroundColor: '#D32F2F' }]}>
-                <Text style={styles.statusText}>Delayed</Text>
-              </View>
+        <TouchableOpacity style={styles.busCard}>
+          <View style={styles.busInfo}>
+            <Text style={styles.busName}>Intercity 245</Text>
+            <Text style={styles.busRoute}>Colombo - Galle</Text>
+            <View
+              style={[styles.statusBadge, { backgroundColor: '#D32F2F' }]}
+            >
+              <Text style={styles.statusText}>Delayed</Text>
             </View>
-            <Ionicons name="heart" size={24} color="#FF6200" />
-          </TouchableOpacity>
+          </View>
+          <Ionicons name="heart" size={24} color="#FF6200" />
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.busCard}>
-            <View style={styles.busInfo}>
-              <Text style={styles.busName}>Super Express 301</Text>
-              <Text style={styles.busRoute}>Negombo - Jaffna</Text>
-              <View style={[styles.statusBadge, { backgroundColor: '#2E7D32' }]}>
-                <Text style={styles.statusText}>On Time</Text>
-              </View>
+        <TouchableOpacity style={styles.busCard}>
+          <View style={styles.busInfo}>
+            <Text style={styles.busName}>Super Express 301</Text>
+            <Text style={styles.busRoute}>Negombo - Jaffna</Text>
+            <View
+              style={[styles.statusBadge, { backgroundColor: '#2E7D32' }]}
+            >
+              <Text style={styles.statusText}>On Time</Text>
             </View>
-            <Ionicons name="heart" size={24} color="#FF6200" />
-          </TouchableOpacity>
+          </View>
+          <Ionicons name="heart" size={24} color="#FF6200" />
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.busCard}>
-            <View style={styles.busInfo}>
-              <Text style={styles.busName}>Express 156</Text>
-              <Text style={styles.busRoute}>Colombo - Anuradhapura</Text>
-              <View style={[styles.statusBadge, { backgroundColor: '#2E7D32' }]}>
-                <Text style={styles.statusText}>On Time</Text>
-              </View>
+        <TouchableOpacity style={styles.busCard}>
+          <View style={styles.busInfo}>
+            <Text style={styles.busName}>Express 156</Text>
+            <Text style={styles.busRoute}>Colombo - Anuradhapura</Text>
+            <View
+              style={[styles.statusBadge, { backgroundColor: '#2E7D32' }]}
+            >
+              <Text style={styles.statusText}>On Time</Text>
             </View>
-            <Ionicons name="heart" size={24} color="#FF6200" />
-          </TouchableOpacity>
-        </ScrollView>
+          </View>
+          <Ionicons name="heart" size={24} color="#FF6200" />
+        </TouchableOpacity>
+      </ScrollView>
 
-        {/* Bottom Tab Bar (simulated - in real app use expo-router Tabs) */}
-        <View style={styles.bottomTab}>
-          <TouchableOpacity style={styles.tabItem}>
-            <Ionicons name="home" size={28} color="#FF6200" />
-            <Text style={[styles.tabLabel, { color: '#FF6200' }]}>Home</Text>
-          </TouchableOpacity>
+      {/* Bottom Tab Bar (simulated - in real app use expo-router Tabs) */}
+      <View style={styles.bottomTab}>
+        <TouchableOpacity style={styles.tabItem}>
+          <Ionicons name="home" size={28} color="#FF6200" />
+          <Text style={[styles.tabLabel, { color: '#FF6200' }]}>Home</Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tabItem}>
-            <Ionicons name="search-outline" size={28} color="#AAAAAA" />
-            <Text style={styles.tabLabel}>Search</Text>
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.tabItem}>
+          <Ionicons name="search-outline" size={28} color="#AAAAAA" />
+          <Text style={styles.tabLabel}>Search</Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tabItem}>
-            <Ionicons name="heart-outline" size={28} color="#AAAAAA" />
-            <Text style={styles.tabLabel}>Favorite</Text>
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.tabItem}>
+          <Ionicons name="heart-outline" size={28} color="#AAAAAA" />
+          <Text style={styles.tabLabel}>Favorite</Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tabItem}>
-            <Ionicons name="person-outline" size={28} color="#AAAAAA" />
-            <Text style={styles.tabLabel}>Profile</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    </>
+        <TouchableOpacity style={styles.tabItem}>
+          <Ionicons name="person-outline" size={28} color="#AAAAAA" />
+          <Text style={styles.tabLabel}>Profile</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 };
 
