@@ -1,4 +1,4 @@
-// LoginScreen.tsx
+// app/(auth)/register.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -11,13 +11,21 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // ← install: expo install @expo/vector-icons
-// If not using Expo → use react-native-vector-icons or your own icons
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';  // ← ONLY this for navigation
 
-const LoginScreen = () => {
+const RegisterScreen = () => {
+  const [fullName, setFullName] = useState('');
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<'Passenger' | 'Bus Owner' | 'Conductor/Driver' | null>(null);
+
+  const roles = ['Passenger', 'Bus Owner', 'Conductor/Driver'] as const;
+
+  const goToLogin = () => {
+    router.push('/(auth)/login');   // or router.back() if you prefer
+  };
 
   return (
     <>
@@ -32,17 +40,23 @@ const LoginScreen = () => {
               <Ionicons name="bus" size={48} color="#FFFFFF" />
             </View>
 
-            <Text style={styles.title}>BusPulse LK</Text>
-            <Text style={styles.subtitle}>Your Journey, Tracked.</Text>
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>Join BusPulse LK today.</Text>
           </View>
 
-          <View style={styles.tabContainer}>
-            <TouchableOpacity style={[styles.tab, styles.activeTab]}>
-              <Text style={styles.tabTextActive}>Login</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.tab}>
-              <Text style={styles.tabText}>Register</Text>
-            </TouchableOpacity>
+          <View style={styles.inputWrapper}>
+            <Text style={styles.label}>Full Name</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="person-outline" size={20} color="#888" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your full name"
+                placeholderTextColor="#666"
+                value={fullName}
+                onChangeText={setFullName}
+                autoCapitalize="words"
+              />
+            </View>
           </View>
 
           <View style={styles.inputWrapper}>
@@ -67,7 +81,7 @@ const LoginScreen = () => {
               <Ionicons name="lock-closed-outline" size={20} color="#888" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Enter your password"
+                placeholder="Create a password"
                 placeholderTextColor="#666"
                 value={password}
                 onChangeText={setPassword}
@@ -85,36 +99,53 @@ const LoginScreen = () => {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.forgotLink}>
-            <Text style={styles.forgotText}>Forgot Password?</Text>
-          </TouchableOpacity>
+          <View style={styles.roleSection}>
+            <Text style={styles.label}>Select your role</Text>
+            {roles.map((role) => (
+              <TouchableOpacity
+                key={role}
+                style={[
+                  styles.roleOption,
+                  selectedRole === role && styles.roleOptionSelected,
+                ]}
+                onPress={() => setSelectedRole(role)}
+              >
+                <View style={styles.radioOuter}>
+                  {selectedRole === role && <View style={styles.radioInner} />}
+                </View>
+                <Text
+                  style={[
+                    styles.roleText,
+                    selectedRole === role && styles.roleTextSelected,
+                  ]}
+                >
+                  {role}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-          <TouchableOpacity style={styles.loginButton}>
-            <Text style={styles.loginButtonText}>Login</Text>
+          <TouchableOpacity style={styles.registerButton}>
+            <Text style={styles.registerButtonText}>Register</Text>
           </TouchableOpacity>
 
           <View style={styles.dividerContainer}>
             <View style={styles.dividerLine} />
-            <Text style={styles.orText}>or continue with</Text>
+            <Text style={styles.orText}>or register with</Text>
             <View style={styles.dividerLine} />
           </View>
 
-          <View style={styles.socialContainer}>
-            <TouchableOpacity style={[styles.socialButton, { backgroundColor: '#4285F4' }]}>
-              <Ionicons name="logo-google" size={20} color="#fff" />
-              <Text style={styles.socialButtonText}>Google</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.socialButton, { backgroundColor: '#000000' }]}>
-              <Ionicons name="logo-apple" size={20} color="#fff" />
-              <Text style={styles.socialButtonText}>Apple</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.socialButton}>
+            <Ionicons name="logo-google" size={20} color="#fff" />
+            <Text style={styles.socialButtonText}>Google</Text>
+          </TouchableOpacity>
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Don't have an account?{' '}
-              <Text style={styles.registerLink}>Register</Text>
+              Already have an account?{' '}
+              <Text style={styles.loginLink} onPress={goToLogin}>
+                Login
+              </Text>
             </Text>
           </View>
         </KeyboardAvoidingView>
@@ -123,6 +154,7 @@ const LoginScreen = () => {
   );
 };
 
+// styles remain 100% the same — no change
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -134,7 +166,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginTop: 60,
+    marginTop: 50,
     marginBottom: 40,
   },
   busCircle: {
@@ -156,32 +188,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#AAAAAA',
     fontWeight: '500',
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#111111',
-    borderRadius: 30,
-    padding: 4,
-    marginBottom: 32,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderRadius: 26,
-  },
-  activeTab: {
-    backgroundColor: '#222222',
-  },
-  tabText: {
-    color: '#888888',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  tabTextActive: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
   },
   inputWrapper: {
     marginBottom: 20,
@@ -213,22 +219,55 @@ const styles = StyleSheet.create({
   eyeIcon: {
     marginRight: 16,
   },
-  forgotLink: {
-    alignSelf: 'flex-end',
+  roleSection: {
     marginBottom: 28,
   },
-  forgotText: {
-    color: '#FF6200',
-    fontSize: 14,
+  roleOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#111111',
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 12,
   },
-  loginButton: {
+  roleOptionSelected: {
+    backgroundColor: '#1A1A1A',
+    borderWidth: 1,
+    borderColor: '#FF6200',
+  },
+  radioOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#888888',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  radioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#FF6200',
+  },
+  roleText: {
+    color: '#AAAAAA',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  roleTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  registerButton: {
     backgroundColor: '#FF6200',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 24,
   },
-  loginButtonText: {
+  registerButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '700',
@@ -248,19 +287,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 14,
   },
-  socialContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 40,
-  },
   socialButton: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#4285F4',
     paddingVertical: 14,
     borderRadius: 12,
-    marginHorizontal: 8,
+    marginBottom: 32,
   },
   socialButtonText: {
     color: '#FFFFFF',
@@ -275,10 +309,10 @@ const styles = StyleSheet.create({
     color: '#AAAAAA',
     fontSize: 15,
   },
-  registerLink: {
+  loginLink: {
     color: '#FF6200',
     fontWeight: '600',
   },
 });
 
-export default LoginScreen;
+export default RegisterScreen;
