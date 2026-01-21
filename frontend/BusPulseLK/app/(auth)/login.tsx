@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';  // ← ONLY this import for navigation
+import { dummyUsers } from './dummyusers';
 
 const LoginScreen = () => {
   const [emailOrPhone, setEmailOrPhone] = useState('');
@@ -94,7 +95,37 @@ const LoginScreen = () => {
             <Text style={styles.forgotText}>Forgot Password?</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.loginButton}>
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={() => {
+              const user = dummyUsers.find(
+                u => u.email === emailOrPhone && u.password === password
+              );
+
+              if (!user) {
+                alert('Invalid credentials!');
+                return;
+              }
+
+              // Type-safe routing
+              switch (user.role.toLowerCase()) {
+                case 'passenger':
+                  router.push('/passenger/dashboard');
+                  break;
+                case 'owner':
+                  router.push('/owner/dashboard');
+                  break;
+                case 'admin':
+                  router.push('/admin/dashboard');
+                  break;
+                case 'worker':
+                  router.push('/worker/dashboard');
+                  break;
+                default:
+                  alert('Role dashboard not found!');
+              }
+            }}
+          >
             <Text style={styles.loginButtonText}>Login</Text>
           </TouchableOpacity>
 
