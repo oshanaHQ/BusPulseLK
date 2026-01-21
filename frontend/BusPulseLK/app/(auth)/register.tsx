@@ -6,13 +6,13 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';  // ← ONLY this for navigation
+import { router } from 'expo-router';
 
 const RegisterScreen = () => {
   const [fullName, setFullName] = useState('');
@@ -24,144 +24,162 @@ const RegisterScreen = () => {
   const roles = ['Passenger', 'Bus Owner', 'Conductor/Driver'] as const;
 
   const goToLogin = () => {
-    router.push('/(auth)/login');   // or router.back() if you prefer
+    router.push('/(auth)/login');
   };
 
   return (
     <>
-      <StatusBar backgroundColor="#000000" barStyle="light-content" />
-      <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardAvoid}
+      {/* Force black status bar */}
+      <StatusBar 
+        backgroundColor="#000000" 
+        barStyle="light-content" 
+        translucent={false} // important on Android
+      />
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.keyboardAvoid}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView
+          style={{ flex: 1, backgroundColor: '#000000' }}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <View style={styles.busCircle}>
-              <Ionicons name="bus" size={48} color="#FFFFFF" />
+          {/* Main content wrapper – full black */}
+          <View style={styles.mainContent}>
+            <View style={styles.header}>
+              <View style={styles.busCircle}>
+                <Ionicons name="bus" size={48} color="#FFFFFF" />
+              </View>
+              <Text style={styles.title}>Create Account</Text>
+              <Text style={styles.subtitle}>Join BusPulse LK today.</Text>
             </View>
 
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Join BusPulse LK today.</Text>
-          </View>
-
-          <View style={styles.inputWrapper}>
-            <Text style={styles.label}>Full Name</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="person-outline" size={20} color="#888" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your full name"
-                placeholderTextColor="#666"
-                value={fullName}
-                onChangeText={setFullName}
-                autoCapitalize="words"
-              />
-            </View>
-          </View>
-
-          <View style={styles.inputWrapper}>
-            <Text style={styles.label}>Email or Phone</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="person-outline" size={20} color="#888" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email or phone"
-                placeholderTextColor="#666"
-                value={emailOrPhone}
-                onChangeText={setEmailOrPhone}
-                autoCapitalize="none"
-                keyboardType="email-address"
-              />
-            </View>
-          </View>
-
-          <View style={styles.inputWrapper}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#888" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Create a password"
-                placeholderTextColor="#666"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Ionicons
-                  name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                  size={20}
-                  color="#888"
-                  style={styles.eyeIcon}
+            <View style={styles.inputWrapper}>
+              <Text style={styles.label}>Full Name</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="person-outline" size={20} color="#888" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your full name"
+                  placeholderTextColor="#666"
+                  value={fullName}
+                  onChangeText={setFullName}
+                  autoCapitalize="words"
                 />
-              </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <Text style={styles.label}>Email or Phone</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="person-outline" size={20} color="#888" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email or phone"
+                  placeholderTextColor="#666"
+                  value={emailOrPhone}
+                  onChangeText={setEmailOrPhone}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="lock-closed-outline" size={20} color="#888" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Create a password"
+                  placeholderTextColor="#666"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <Ionicons
+                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                    size={20}
+                    color="#888"
+                    style={styles.eyeIcon}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.roleSection}>
+              <Text style={styles.label}>Select your role</Text>
+              {roles.map((role) => (
+                <TouchableOpacity
+                  key={role}
+                  style={[
+                    styles.roleOption,
+                    selectedRole === role && styles.roleOptionSelected,
+                  ]}
+                  onPress={() => setSelectedRole(role)}
+                >
+                  <View style={styles.radioOuter}>
+                    {selectedRole === role && <View style={styles.radioInner} />}
+                  </View>
+                  <Text
+                    style={[
+                      styles.roleText,
+                      selectedRole === role && styles.roleTextSelected,
+                    ]}
+                  >
+                    {role}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity style={styles.registerButton}>
+              <Text style={styles.registerButtonText}>Register</Text>
+            </TouchableOpacity>
+
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.orText}>or register with</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <TouchableOpacity style={styles.socialButton}>
+              <Ionicons name="logo-google" size={20} color="#fff" />
+              <Text style={styles.socialButtonText}>Google</Text>
+            </TouchableOpacity>
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>
+                Already have an account?{' '}
+                <Text style={styles.loginLink} onPress={goToLogin}>
+                  Login
+                </Text>
+              </Text>
             </View>
           </View>
-
-          <View style={styles.roleSection}>
-            <Text style={styles.label}>Select your role</Text>
-            {roles.map((role) => (
-              <TouchableOpacity
-                key={role}
-                style={[
-                  styles.roleOption,
-                  selectedRole === role && styles.roleOptionSelected,
-                ]}
-                onPress={() => setSelectedRole(role)}
-              >
-                <View style={styles.radioOuter}>
-                  {selectedRole === role && <View style={styles.radioInner} />}
-                </View>
-                <Text
-                  style={[
-                    styles.roleText,
-                    selectedRole === role && styles.roleTextSelected,
-                  ]}
-                >
-                  {role}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <TouchableOpacity style={styles.registerButton}>
-            <Text style={styles.registerButtonText}>Register</Text>
-          </TouchableOpacity>
-
-          <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.orText}>or register with</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <TouchableOpacity style={styles.socialButton}>
-            <Ionicons name="logo-google" size={20} color="#fff" />
-            <Text style={styles.socialButtonText}>Google</Text>
-          </TouchableOpacity>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Already have an account?{' '}
-              <Text style={styles.loginLink} onPress={goToLogin}>
-                Login
-              </Text>
-            </Text>
-          </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </>
   );
 };
 
-// styles remain 100% the same — no change
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
   keyboardAvoid: {
     flex: 1,
+    backgroundColor: '#000000', // crucial
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 60,
+  },
+  mainContent: {
+    flex: 1,
+    backgroundColor: '#000000',
     paddingHorizontal: 24,
   },
   header: {
@@ -304,6 +322,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: 'center',
+    paddingBottom: 40, // extra safe space
   },
   footerText: {
     color: '#AAAAAA',
