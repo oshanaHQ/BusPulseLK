@@ -1,4 +1,4 @@
-// app/(tabs)/home.tsx
+// app/(tabs)/search.tsx
 import React from 'react';
 import {
   View,
@@ -12,12 +12,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
-const HomeScreen = () => {
+const SearchScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header / Search */}
       <View style={styles.header}>
-        <Text style={styles.appTitle}>BusPulse LK</Text>
+        <Text style={styles.appTitle}>Bus Search</Text>
         <TouchableOpacity style={styles.profileIcon}>
           <Ionicons name="person-circle-outline" size={32} color="#FFFFFF" />
         </TouchableOpacity>
@@ -38,117 +38,77 @@ const HomeScreen = () => {
         />
       </View>
 
-      {/* Feature Cards Grid */}
-      <View style={styles.grid}>
-        <TouchableOpacity 
-          style={styles.card}
-          onPress={() => router.push('./search')}
-        >
-          <Ionicons name="search" size={40} color="#FF6200" />
-          <Text style={styles.cardText}>Search Buses</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.card}>
-          <Ionicons
-            name="shield-checkmark-outline"
-            size={40}
-            color="#FF6200"
-          />
-          <Text style={styles.cardText}>Live Bus Status</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.card}
-          onPress={() => router.push('./favorites')}
-        >
-          <Ionicons name="heart-outline" size={40} color="#FF6200" />
-          <Text style={styles.cardText}>Favorite Buses</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.card}
-          onPress={() => router.push('./ratings')}
-        >
-          <Ionicons name="star-outline" size={40} color="#FF6200" />
-          <Text style={styles.cardText}>My Ratings</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Favorite Buses Section */}
-      <View style={styles.favoritesHeader}>
-        <Text style={styles.sectionTitle}>Favorite Buses</Text>
-        <TouchableOpacity>
-          <Text style={styles.viewAll}>View All</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView style={styles.favoritesScroll}>
+      {/* Bus List */}
+      <ScrollView style={styles.busList}>
         <TouchableOpacity style={styles.busCard}>
           <View style={styles.busInfo}>
-            <Text style={styles.busName}>Expresso 138</Text>
-            <Text style={styles.busRoute}>Colombo - Kandy</Text>
-            <View
-              style={[styles.statusBadge, { backgroundColor: '#2E7D32' }]}
-            >
+            <Text style={styles.busName}>Express 138</Text>
+            <Text style={styles.busRoute}>Colombo → Kandy</Text>
+            <Text style={styles.busTime}>Depart: 08:30 AM   Arrive: 11:45 AM</Text>
+            <View style={[styles.statusBadge, { backgroundColor: '#2E7D32' }]}>
               <Text style={styles.statusText}>On Time</Text>
             </View>
           </View>
-          <Ionicons name="heart" size={24} color="#FF6200" />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.busCard}>
           <View style={styles.busInfo}>
             <Text style={styles.busName}>Intercity 245</Text>
-            <Text style={styles.busRoute}>Colombo - Galle</Text>
-            <View
-              style={[styles.statusBadge, { backgroundColor: '#D32F2F' }]}
-            >
+            <Text style={styles.busRoute}>Colombo → Galle</Text>
+            <Text style={styles.busTime}>Depart: 09:15 AM   Arrive: 12:30 PM</Text>
+            <View style={[styles.statusBadge, { backgroundColor: '#D32F2F' }]}>
               <Text style={styles.statusText}>Delayed</Text>
             </View>
           </View>
-          <Ionicons name="heart" size={24} color="#FF6200" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.busCard}>
+          <View style={styles.busInfo}>
+            <Text style={styles.busName}>Express 139</Text>
+            <Text style={styles.busRoute}>Colombo → Kandy</Text>
+            <Text style={styles.busTime}>Depart: 10:00 AM   Arrive: 01:15 PM</Text>
+            <View style={[styles.statusBadge, { backgroundColor: '#2E7D32' }]}>
+              <Text style={styles.statusText}>On Time</Text>
+            </View>
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.busCard}>
           <View style={styles.busInfo}>
             <Text style={styles.busName}>Super Express 301</Text>
-            <Text style={styles.busRoute}>Negombo - Jaffna</Text>
-            <View
-              style={[styles.statusBadge, { backgroundColor: '#2E7D32' }]}
-            >
+            <Text style={styles.busRoute}>Colombo → Jaffna</Text>
+            <Text style={styles.busTime}>Depart: 11:30 AM   Arrive: 02:30 PM</Text>
+            <View style={[styles.statusBadge, { backgroundColor: '#2E7D32' }]}>
               <Text style={styles.statusText}>On Time</Text>
             </View>
           </View>
-          <Ionicons name="heart" size={24} color="#FF6200" />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.busCard}>
           <View style={styles.busInfo}>
-            <Text style={styles.busName}>Express 156</Text>
-            <Text style={styles.busRoute}>Colombo - Anuradhapura</Text>
-            <View
-              style={[styles.statusBadge, { backgroundColor: '#2E7D32' }]}
-            >
+            <Text style={styles.busName}>Local 156</Text>
+            <Text style={styles.busRoute}>Colombo → Kandy</Text>
+            <Text style={styles.busTime}>Depart: 12:45 PM   Arrive: 04:00 PM</Text>
+            <View style={[styles.statusBadge, { backgroundColor: '#2E7D32' }]}>
               <Text style={styles.statusText}>On Time</Text>
             </View>
           </View>
-          <Ionicons name="heart" size={24} color="#FF6200" />
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Bottom Tab Bar (simulated - in real app use expo-router Tabs) */}
+      {/* Bottom Tab Bar */}
       <View style={styles.bottomTab}>
-        <TouchableOpacity style={styles.tabItem}>
-          <Ionicons name="home" size={28} color="#FF6200" />
-          <Text style={[styles.tabLabel, { color: '#FF6200' }]}>Home</Text>
-        </TouchableOpacity>
-
         <TouchableOpacity 
           style={styles.tabItem}
-          onPress={() => router.push('./search')}
+          onPress={() => router.push('./dashboard')}
         >
-          <Ionicons name="search-outline" size={28} color="#AAAAAA" />
-          <Text style={styles.tabLabel}>Search</Text>
+          <Ionicons name="home-outline" size={28} color="#AAAAAA" />
+          <Text style={styles.tabLabel}>Home</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.tabItem}>
+          <Ionicons name="search" size={28} color="#FF6200" />
+          <Text style={[styles.tabLabel, { color: '#FF6200' }]}>Search</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
@@ -207,59 +167,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginBottom: 16, // reduced middle space
-  },
-  card: {
-    width: '48%',
-    backgroundColor: '#111111',
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    marginBottom: 12, // reduced
-  },
-  cardText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: 12,
-    textAlign: 'center',
-  },
-  favoritesHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 8, // reduced
-  },
-  sectionTitle: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  viewAll: {
-    color: '#FF6200',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  favoritesScroll: {
+  busList: {
     paddingHorizontal: 20,
   },
   busCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     backgroundColor: '#111111',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 8, // reduced
-  },
-  busInfo: {
-    flex: 1,
+    marginBottom: 12,
   },
   busName: {
     color: '#FFFFFF',
@@ -270,7 +185,12 @@ const styles = StyleSheet.create({
   busRoute: {
     color: '#AAAAAA',
     fontSize: 14,
-    marginBottom: 6,
+    marginBottom: 4,
+  },
+  busTime: {
+    color: '#AAAAAA',
+    fontSize: 14,
+    marginBottom: 8,
   },
   statusBadge: {
     alignSelf: 'flex-start',
@@ -300,6 +220,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
   },
+  // ────────────────────────────────────────────────
+  // ONLY THIS WAS ADDED — fixes the TypeScript error
+  busInfo: {
+    flex: 1,
+  },
+  // ────────────────────────────────────────────────
 });
 
-export default HomeScreen;
+export default SearchScreen;
