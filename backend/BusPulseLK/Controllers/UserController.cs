@@ -61,7 +61,7 @@ namespace BusPulseLK.Controllers
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
 
-            if (user == null || user.Password != HashPassword(dto.Password))
+            if (user == null || !VerifyPassword(dto.Password, user.Password))
                 return BadRequest("Invalid email or password.");
 
             // Check if account needs verification
@@ -83,6 +83,12 @@ namespace BusPulseLK.Controllers
             var bytes = Encoding.UTF8.GetBytes(password);
             var hash = sha256.ComputeHash(bytes);
             return Convert.ToBase64String(hash);
+        }
+
+        private bool VerifyPassword(string plainPassword, string hashedPassword)
+        {
+            var hashOfInput = HashPassword(plainPassword);
+            return hashOfInput == hashedPassword;
         }
 
         private string GenerateJwtToken(User user)
