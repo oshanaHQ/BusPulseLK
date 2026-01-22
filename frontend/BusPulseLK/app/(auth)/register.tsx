@@ -10,9 +10,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { authService } from '../../services/api';
 
 const RegisterScreen = () => {
   const [fullName, setFullName] = useState('');
@@ -20,11 +23,49 @@ const RegisterScreen = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState<'Passenger' | 'Bus Owner' | 'Conductor/Driver' | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const roles = ['Passenger', 'Bus Owner', 'Conductor/Driver'] as const;
 
   const goToLogin = () => {
     router.push('/(auth)/login');
+  };
+
+  const handleRegister = async () => {
+    if (!fullName || !emailOrPhone || !password || !selectedRole) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    // Map frontend roles to backend roles
+    const roleMap: { [key: string]: 'Passenger' | 'BusOwner' | 'Driver' | 'Conductor' | 'Admin' } = {
+      'Passenger': 'Passenger',
+      'Bus Owner': 'BusOwner',
+      'Conductor/Driver': 'Driver',
+    };
+
+    setLoading(true);
+    try {
+      const response = await authService.register({
+        fullName,
+        email: emailOrPhone,
+        password,
+        role: roleMap[selectedRole] || 'Passenger',
+      });
+
+      Alert.alert('Success', 'Registration successful! You can now login.', [
+        {
+          text: 'OK',
+          onPress: () => {
+            router.push('/(auth)/login');
+          },
+        },
+      ]);
+    } catch (error: any) {
+      Alert.alert('Registration Failed', error.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -138,8 +179,16 @@ const RegisterScreen = () => {
               ))}
             </View>
 
-            <TouchableOpacity style={styles.registerButton}>
-              <Text style={styles.registerButtonText}>Register</Text>
+            <TouchableOpacity 
+              style={styles.registerButton}
+              onPress={handleRegister}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.registerButtonText}>Register</Text>
+              )}
             </TouchableOpacity>
 
             <View style={styles.dividerContainer}>

@@ -10,18 +10,62 @@ import {
   StatusBar,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';  // ← ONLY this import for navigation
-import { dummyUsers } from './dummyusers';
+import { router } from 'expo-router';
+import { authService } from '../../services/api';
 
 const LoginScreen = () => {
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const goToRegister = () => {
-    router.push('/(auth)/register');   // or just '/register' if inside (auth) group
+    router.push('/(auth)/register');
+  };
+
+  const handleLogin = async () => {
+    if (!emailOrPhone || !password) {
+      Alert.alert('Error', 'Please enter email and password');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await authService.login({
+        email: emailOrPhone,
+        password: password,
+      });
+
+      // Store token if needed (you can use AsyncStorage)
+      // Store user role to determine navigation
+      const role = response.user.role.toLowerCase();
+
+      switch (role) {
+        case 'passenger':
+          router.push('/passenger/dashboard');
+          break;
+        case 'busowner':
+          router.push('/owner/dashboard');
+          break;
+        case 'admin':
+          router.push('/admin/dashboard');
+          break;
+        case 'driver':
+        case 'conductor':
+          router.push('/worker/dashboard');
+          break;
+        default:
+          Alert.alert('Error', 'Role dashboard not found');
+      }
+    } catch (error: any) {
+      Alert.alert('Login Failed', error.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -97,36 +141,14 @@ const LoginScreen = () => {
 
           <TouchableOpacity
             style={styles.loginButton}
-            onPress={() => {
-              const user = dummyUsers.find(
-                u => u.email === emailOrPhone && u.password === password
-              );
-
-              if (!user) {
-                alert('Invalid credentials!');
-                return;
-              }
-
-              // Type-safe routing
-              switch (user.role.toLowerCase()) {
-                case 'passenger':
-                  router.push('/passenger/dashboard');
-                  break;
-                case 'owner':
-                  router.push('/owner/dashboard');
-                  break;
-                case 'admin':
-                  router.push('/admin/dashboard');
-                  break;
-                case 'worker':
-                  router.push('/worker/dashboard');
-                  break;
-                default:
-                  alert('Role dashboard not found!');
-              }
-            }}
+            onPress={handleLogin}
+            disabled={loading}
           >
-            <Text style={styles.loginButtonText}>Login</Text>
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Text style={styles.loginButtonText}>Login</Text>
+            )}
           </TouchableOpacity>
 
           <View style={styles.dividerContainer}>
