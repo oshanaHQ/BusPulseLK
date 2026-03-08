@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://10.230.19.49:5251/api';
+const API_BASE_URL = 'http://192.168.8.108:5251/api';
 
 export interface LoginRequest {
   email: string;
@@ -45,13 +45,7 @@ export const authService = {
   },
 
   async register(data: RegisterRequest): Promise<AuthResponse> {
-    // Map frontend role values to backend values
-    const roleMap: { [key: string]: string } = {
-      'Passenger': 'Passenger',
-      'Bus Owner': 'BusOwner',
-      'Conductor/Driver': 'Driver',
-    };
-
+    // Remove the duplicate role mapping - it's already done in register.tsx
     const response = await fetch(`${API_BASE_URL}/user/register`, {
       method: 'POST',
       headers: {
@@ -61,7 +55,7 @@ export const authService = {
         fullName: data.fullName,
         email: data.email,
         password: data.password,
-        role: roleMap[data.role as any] || 'Passenger',
+        role: data.role, // Use the role directly - it's already mapped correctly
       }),
     });
 

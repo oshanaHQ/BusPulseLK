@@ -27,11 +27,11 @@ namespace BusPulseLK.Controllers
         public async Task<IActionResult> Register(RegisterUserDto dto)
         {
             if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
-                return BadRequest("Email already exists.");
+                return BadRequest(new { message = "Email already exists." });
 
             var allowedRoles = new[] { "Admin", "BusOwner", "Driver", "Conductor", "Passenger" };
             if (!allowedRoles.Contains(dto.Role))
-                return BadRequest("Invalid role.");
+                return BadRequest(new { message = "Invalid role." });
 
             var user = new User
             {
@@ -50,9 +50,8 @@ namespace BusPulseLK.Controllers
             var token = GenerateJwtToken(user);
             return Ok(new 
             { 
-                Message = "User registered successfully.", 
-                Token = token,
-                User = new { user.Id, user.FullName, user.Email, user.Role }
+                token = token,
+                user = new { user.Id, user.FullName, user.Email, user.Role }
             });
         }
 
@@ -62,18 +61,14 @@ namespace BusPulseLK.Controllers
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
 
             if (user == null || !VerifyPassword(dto.Password, user.Password))
-                return BadRequest("Invalid email or password.");
-
-            // Check if account needs verification
-            if (!user.IsVerified && new[] { "BusOwner", "Driver", "Conductor" }.Contains(user.Role))
-                return BadRequest("Account is pending verification.");
+                return BadRequest(new { message = "Invalid email or password." });
 
             var token = GenerateJwtToken(user);
 
             return Ok(new 
             { 
-                Token = token,
-                User = new { user.Id, user.FullName, user.Email, user.Role, user.IsRegularPassenger }
+                token = token,
+                user = new { user.Id, user.FullName, user.Email, user.Role, user.IsRegularPassenger }
             });
         }
 
