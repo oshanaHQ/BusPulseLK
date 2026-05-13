@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using BusPulseLK.Models;
+using System.Security.Cryptography;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,4 +64,43 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+// ── Seed Admin User ────────────────────────────────────────────────────────
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<AppDbContext>();
+    
+    var adminEmail = "Admin1@gmail.com";
+    var adminPassword = "admin12002";
+    
+    // Hash password
+    using var sha256 = SHA256.Create();
+    var bytes = Encoding.UTF8.GetBytes(adminPassword);
+    var hash = sha256.ComputeHash(bytes);
+    var hashedPassword = Convert.ToBase64String(hash);
+
+    var existingAdmin = context.Users.FirstOrDefault(u => u.Email == adminEmail);
+    if (existingAdmin == null)
+    {
+        var adminUser = new User
+        {
+            FullName = "System Admin",
+            Email = adminEmail,
+            Password = hashedPassword,
+            Role = "Admin",
+            IsVerified = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        context.Users.Add(adminUser);
+    }
+    else
+    {
+        // Update password and role to ensure they are correct
+        existingAdmin.Password = hashedPassword;
+        existingAdmin.Role = "Admin";
+        existingAdmin.IsVerified = true;
+    }
+    context.SaveChanges();
+}
+
+app.Run();
