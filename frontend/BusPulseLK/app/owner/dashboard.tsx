@@ -1,5 +1,4 @@
-// app/owner/dashboard.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,13 +8,49 @@ import {
   ScrollView,
   StatusBar,
   Alert,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
+import { busService } from '../../services/api';
+
+interface Bus {
+  id: number;
+  numberPlate: string;
+  name?: string;
+  busType: string;
+  isActive: boolean;
+  driver?: { fullName: string };
+}
 
 const BusOwnerDashboard = () => {
   const { user, logout } = useAuth();
+  const [buses, setBuses] = useState<Bus[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetchBuses();
+  }, []);
+
+  const fetchBuses = async () => {
+    try {
+      const data = await busService.getMine();
+      setBuses(data as Bus[]);
+    } catch (error: any) {
+      console.error('Fetch buses error:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchBuses();
+  };
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -23,11 +58,17 @@ const BusOwnerDashboard = () => {
       { text: 'Logout', style: 'destructive', onPress: () => logout() },
     ]);
   };
+
   return (
     <>
       <StatusBar backgroundColor="#000000" barStyle="light-content" />
       <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6200" />
+          }
+        >
           {/* Header */}
           <View style={styles.header}>
             <View>
@@ -68,87 +109,47 @@ const BusOwnerDashboard = () => {
           {/* My Buses Section */}
           <View style={styles.busesHeader}>
             <Text style={styles.sectionTitle}>My Buses</Text>
-            <TouchableOpacity style={styles.addButton}>
+            <TouchableOpacity 
+              style={styles.addButton}
+              onPress={() => router.push({ pathname: './manage-buses', params: { openAdd: 'true' } })}
+            >
               <Text style={styles.addButtonText}>+ Add Bus</Text>
             </TouchableOpacity>
           </View>
 
           {/* Bus List */}
           <View style={styles.busList}>
-            {/* Bus 1 */}
-            <View style={styles.busItem}>
-              <View style={styles.busInfo}>
-                <Text style={styles.busName}>Express 138</Text>
-                <Text style={styles.busRoute}>Colombo → Kandy</Text>
-                <Text style={styles.driverText}>Driver: Kamal Silva</Text>
-                <View style={[styles.statusBadge, { backgroundColor: '#2E7D32' }]}>
-                  <Text style={styles.statusText}>Active</Text>
-                </View>
+            {loading ? (
+              <ActivityIndicator color="#FF6200" style={{ marginTop: 20 }} />
+            ) : buses.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>No buses found. Add your first bus!</Text>
               </View>
-              <TouchableOpacity>
-                <Text style={styles.editText}>Edit</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Bus 2 */}
-            <View style={styles.busItem}>
-              <View style={styles.busInfo}>
-                <Text style={styles.busName}>Intercity 245</Text>
-                <Text style={styles.busRoute}>Colombo → Galle</Text>
-                <Text style={styles.driverText}>Driver: Nimal Perera</Text>
-                <View style={[styles.statusBadge, { backgroundColor: '#D32F2F' }]}>
-                  <Text style={styles.statusText}>Delayed</Text>
+            ) : (
+              buses.map((bus) => (
+                <View key={bus.id} style={styles.busItem}>
+                  <View style={styles.busInfo}>
+                    <Text style={styles.busName}>{bus.numberPlate}</Text>
+                    <Text style={styles.busRoute}>{bus.name || 'No Name'}</Text>
+                    <Text style={styles.driverText}>Driver: {bus.driver?.fullName || 'Not Assigned'}</Text>
+                    <View style={[
+                      styles.statusBadge, 
+                      { backgroundColor: bus.isActive ? '#2E7D3222' : '#FF620022' }
+                    ]}>
+                      <Text style={[
+                        styles.statusText, 
+                        { color: bus.isActive ? '#2E7D32' : '#FF6200' }
+                      ]}>
+                        {bus.isActive ? 'Active' : 'Pending Approval'}
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity onPress={() => router.push('./manage-buses')}>
+                    <Text style={styles.editText}>Details</Text>
+                  </TouchableOpacity>
                 </View>
-              </View>
-              <TouchableOpacity>
-                <Text style={styles.editText}>Edit</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Bus 3 */}
-            <View style={styles.busItem}>
-              <View style={styles.busInfo}>
-                <Text style={styles.busName}>Super Express 301</Text>
-                <Text style={styles.busRoute}>Negombo → Jaffna</Text>
-                <Text style={styles.driverText}>Driver: Sunil Fernando</Text>
-                <View style={[styles.statusBadge, { backgroundColor: '#2E7D32' }]}>
-                  <Text style={styles.statusText}>Active</Text>
-                </View>
-              </View>
-              <TouchableOpacity>
-                <Text style={styles.editText}>Edit</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Bus 4 */}
-            <View style={styles.busItem}>
-              <View style={styles.busInfo}>
-                <Text style={styles.busName}>Express 156</Text>
-                <Text style={styles.busRoute}>Colombo → Anuradhapura</Text>
-                <Text style={styles.driverText}>Driver: Not Assigned</Text>
-                <View style={[styles.statusBadge, { backgroundColor: '#757575' }]}>
-                  <Text style={styles.statusText}>Not Running</Text>
-                </View>
-              </View>
-              <TouchableOpacity>
-                <Text style={styles.editText}>Edit</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Bus 5 */}
-            <View style={styles.busItem}>
-              <View style={styles.busInfo}>
-                <Text style={styles.busName}>Local 178</Text>
-                <Text style={styles.busRoute}>Colombo → Kurunegala</Text>
-                <Text style={styles.driverText}>Driver: Ruwan Jayasekara</Text>
-                <View style={[styles.statusBadge, { backgroundColor: '#2E7D32' }]}>
-                  <Text style={styles.statusText}>Active</Text>
-                </View>
-              </View>
-              <TouchableOpacity>
-                <Text style={styles.editText}>Edit</Text>
-              </TouchableOpacity>
-            </View>
+              ))
+            )}
           </View>
         </ScrollView>
 
@@ -324,6 +325,16 @@ const styles = StyleSheet.create({
     color: '#AAAAAA',
     fontSize: 12,
     marginTop: 4,
+  },
+  emptyState: {
+    alignItems: 'center',
+    marginTop: 40,
+    padding: 20,
+  },
+  emptyText: {
+    color: '#666666',
+    fontSize: 16,
+    textAlign: 'center',
   },
 });
 

@@ -91,6 +91,26 @@ namespace BusPulseLK.Controllers
         }
 
         // ────────────────────────────────────────────────────────────────────
+        // GET api/buses/pending
+        // Admin only: get all buses with IsActive = false
+        // ────────────────────────────────────────────────────────────────────
+        [HttpGet("pending")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<IEnumerable<BusResponseDto>>> GetPending()
+        {
+            var buses = await _context.Buses
+                .Include(b => b.Owner)
+                .Include(b => b.Driver)
+                .Include(b => b.Conductor)
+                .Where(b => !b.IsActive)
+                .OrderByDescending(b => b.CreatedAt)
+                .Select(b => MapToDto(b))
+                .ToListAsync();
+
+            return Ok(buses);
+        }
+
+        // ────────────────────────────────────────────────────────────────────
         // POST api/buses
         // BusOwner only
         // ────────────────────────────────────────────────────────────────────
@@ -181,6 +201,28 @@ namespace BusPulseLK.Controllers
 
             await _context.SaveChangesAsync();
             await LoadBusNavigations(bus);
+
+            return Ok(MapToDto(bus));
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // PATCH api/buses/{id}/approve
+        // Admin only
+        // ────────────────────────────────────────────────────────────────────
+        [HttpPatch("{id}/approve")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<BusResponseDto>> Approve(int id)
+        {
+            var bus = await _context.Buses
+                .Include(b => b.Owner)
+                .Include(b => b.Driver)
+                .Include(b => b.Conductor)
+                .FirstOrDefaultAsync(b => b.Id == id);
+
+            if (bus == null) return NotFound(new { message = "Bus not found." });
+
+            bus.IsActive = true;
+            await _context.SaveChangesAsync();
 
             return Ok(MapToDto(bus));
         }
