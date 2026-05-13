@@ -15,13 +15,15 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { authService } from '../../services/api';
+import { authService, AuthUser } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const LoginScreen = () => {
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const auth = useAuth();
 
   const goToRegister = () => {
     router.push('/(auth)/register');
@@ -40,27 +42,8 @@ const LoginScreen = () => {
         password: password,
       });
 
-      // Store token if needed (you can use AsyncStorage)
-      // Store user role to determine navigation
-      const role = response.user.role.toLowerCase();
-
-      switch (role) {
-        case 'passenger':
-          router.push('/passenger/dashboard');
-          break;
-        case 'busowner':
-          router.push('/owner/dashboard');
-          break;
-        case 'admin':
-          router.push('/admin/dashboard');
-          break;
-        case 'driver':
-        case 'conductor':
-          router.push('/worker/dashboard');
-          break;
-        default:
-          Alert.alert('Error', 'Role dashboard not found');
-      }
+      // Save token + user — RouteGuard in _layout.tsx will redirect automatically
+      await auth.login(response.token, response.user as AuthUser);
     } catch (error: any) {
       Alert.alert('Login Failed', error.message || 'Invalid credentials');
     } finally {

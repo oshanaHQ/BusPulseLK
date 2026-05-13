@@ -1,4 +1,4 @@
-// app/(tabs)/owner/dashboard.tsx
+// app/owner/dashboard.tsx
 import React from 'react';
 import {
   View,
@@ -8,11 +8,21 @@ import {
   SafeAreaView,
   ScrollView,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useAuth } from '../../context/AuthContext';
 
 const BusOwnerDashboard = () => {
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Logout', style: 'destructive', onPress: () => logout() },
+    ]);
+  };
   return (
     <>
       <StatusBar backgroundColor="#000000" barStyle="light-content" />
@@ -20,9 +30,12 @@ const BusOwnerDashboard = () => {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Bus Owner Dashboard</Text>
-            <TouchableOpacity>
-              <Ionicons name="person-circle-outline" size={32} color="#FFFFFF" />
+            <View>
+              <Text style={styles.title}>Bus Owner Dashboard</Text>
+              <Text style={styles.subtitle}>Welcome, {user?.fullName ?? 'Owner'}</Text>
+            </View>
+            <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+              <Ionicons name="log-out-outline" size={24} color="#FF6200" />
             </TouchableOpacity>
           </View>
 
@@ -186,9 +199,17 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#FFFFFF',
+  },
+  subtitle: {
+    fontSize: 13,
+    color: '#AAAAAA',
+    marginTop: 2,
+  },
+  logoutBtn: {
+    padding: 8,
   },
   grid: {
     flexDirection: 'row',

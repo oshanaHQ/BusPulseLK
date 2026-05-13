@@ -7,10 +7,20 @@ import {
   SafeAreaView,
   ScrollView,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../../context/AuthContext';
 
 const EmployeeDashboard = () => {
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Logout', style: 'destructive', onPress: () => logout() },
+    ]);
+  };
   return (
     <>
       <StatusBar backgroundColor="#000000" barStyle="light-content" />
@@ -18,9 +28,12 @@ const EmployeeDashboard = () => {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Employee Dashboard</Text>
-            <TouchableOpacity>
-              <Ionicons name="person-circle-outline" size={32} color="#FFFFFF" />
+            <View>
+              <Text style={styles.title}>Worker Dashboard</Text>
+              <Text style={styles.subtitle}>Welcome, {user?.fullName ?? 'Worker'}</Text>
+            </View>
+            <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+              <Ionicons name="log-out-outline" size={24} color="#FF6200" />
             </TouchableOpacity>
           </View>
 
@@ -172,9 +185,17 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#FFFFFF',
+  },
+  subtitle: {
+    fontSize: 13,
+    color: '#AAAAAA',
+    marginTop: 2,
+  },
+  logoutBtn: {
+    padding: 8,
   },
   busCard: {
     backgroundColor: '#111111',

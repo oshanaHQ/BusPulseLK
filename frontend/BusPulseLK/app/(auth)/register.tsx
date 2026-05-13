@@ -15,7 +15,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { authService } from '../../services/api';
+import { authService, AuthUser } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const RegisterScreen = () => {
   const [fullName, setFullName] = useState('');
@@ -24,6 +25,7 @@ const RegisterScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState<'Passenger' | 'Bus Owner' | 'Conductor/Driver' | null>(null);
   const [loading, setLoading] = useState(false);
+  const auth = useAuth();
 
   const roles = ['Passenger', 'Bus Owner', 'Conductor/Driver'] as const;
 
@@ -37,11 +39,11 @@ const RegisterScreen = () => {
       return;
     }
 
-    // Map frontend roles to backend roles
+    // Map frontend role labels to backend role strings
     const roleMap: { [key: string]: 'Passenger' | 'BusOwner' | 'Driver' | 'Conductor' | 'Admin' } = {
-      'Passenger': 'Passenger',
-      'Bus Owner': 'BusOwner',
-      'Conductor/Driver': 'Driver',
+      'Passenger':          'Passenger',
+      'Bus Owner':          'BusOwner',
+      'Conductor/Driver':   'Driver',
     };
 
     setLoading(true);
@@ -53,14 +55,8 @@ const RegisterScreen = () => {
         role: roleMap[selectedRole] || 'Passenger',
       });
 
-      Alert.alert('Success', 'Registration successful! You can now login.', [
-        {
-          text: 'OK',
-          onPress: () => {
-            router.push('/(auth)/login');
-          },
-        },
-      ]);
+      // Auto-login: save token + user — RouteGuard redirects to dashboard
+      await auth.login(response.token, response.user as AuthUser);
     } catch (error: any) {
       Alert.alert('Registration Failed', error.message || 'Something went wrong');
     } finally {

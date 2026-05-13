@@ -15,6 +15,15 @@ namespace BusPulseLK.Data
         public DbSet<Bus> Buses { get; set; }
         public DbSet<Timetable> Timetables { get; set; }
 
+        // ── New DbSets ───────────────────────────────────────────────────────
+        public DbSet<Trip> Trips { get; set; }
+        public DbSet<TownProgress> TownProgresses { get; set; }
+        public DbSet<Announcement> Announcements { get; set; }
+        public DbSet<Favorite> Favorites { get; set; }
+        public DbSet<Rating> Ratings { get; set; }
+        public DbSet<IssueReport> IssueReports { get; set; }
+        public DbSet<RegularPassengerRequest> RegularPassengerRequests { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -134,6 +143,167 @@ namespace BusPulseLK.Data
                 .WithMany()
                 .HasForeignKey(t => t.CreatedById)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // ── Trips ─────────────────────────────────────────────────────────
+            modelBuilder.Entity<Trip>()
+                .ToTable("trips");
+
+            // A timetable entry should only have one trip per date
+            modelBuilder.Entity<Trip>()
+                .HasIndex(t => new { t.TimetableId, t.TripDate })
+                .IsUnique();
+
+            modelBuilder.Entity<Trip>()
+                .HasOne(t => t.Timetable)
+                .WithMany()
+                .HasForeignKey(t => t.TimetableId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Trip>()
+                .HasOne(t => t.LastPassedTown)
+                .WithMany()
+                .HasForeignKey(t => t.LastPassedTownId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // ── TownProgresses ────────────────────────────────────────────────
+            modelBuilder.Entity<TownProgress>()
+                .ToTable("town_progresses");
+
+            // A town can only be marked as passed once per trip
+            modelBuilder.Entity<TownProgress>()
+                .HasIndex(tp => new { tp.TripId, tp.TownId })
+                .IsUnique();
+
+            modelBuilder.Entity<TownProgress>()
+                .HasOne(tp => tp.Trip)
+                .WithMany(t => t.TownProgresses)
+                .HasForeignKey(tp => tp.TripId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TownProgress>()
+                .HasOne(tp => tp.Town)
+                .WithMany()
+                .HasForeignKey(tp => tp.TownId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<TownProgress>()
+                .HasOne(tp => tp.UpdatedBy)
+                .WithMany()
+                .HasForeignKey(tp => tp.UpdatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ── Announcements ─────────────────────────────────────────────────
+            modelBuilder.Entity<Announcement>()
+                .ToTable("announcements");
+
+            modelBuilder.Entity<Announcement>()
+                .HasOne(a => a.Bus)
+                .WithMany()
+                .HasForeignKey(a => a.BusId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Announcement>()
+                .HasOne(a => a.Trip)
+                .WithMany(t => t.Announcements)
+                .HasForeignKey(a => a.TripId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Announcement>()
+                .HasOne(a => a.CreatedBy)
+                .WithMany()
+                .HasForeignKey(a => a.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ── Favorites ─────────────────────────────────────────────────────
+            modelBuilder.Entity<Favorite>()
+                .ToTable("favorites");
+
+            // A passenger can only favorite a bus once
+            modelBuilder.Entity<Favorite>()
+                .HasIndex(f => new { f.PassengerId, f.BusId })
+                .IsUnique();
+
+            modelBuilder.Entity<Favorite>()
+                .HasOne(f => f.Passenger)
+                .WithMany()
+                .HasForeignKey(f => f.PassengerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Favorite>()
+                .HasOne(f => f.Bus)
+                .WithMany()
+                .HasForeignKey(f => f.BusId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ── Ratings ───────────────────────────────────────────────────────
+            modelBuilder.Entity<Rating>()
+                .ToTable("ratings");
+
+            // A passenger can only rate a bus once
+            modelBuilder.Entity<Rating>()
+                .HasIndex(r => new { r.PassengerId, r.BusId })
+                .IsUnique();
+
+            modelBuilder.Entity<Rating>()
+                .HasOne(r => r.Passenger)
+                .WithMany()
+                .HasForeignKey(r => r.PassengerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Rating>()
+                .HasOne(r => r.Bus)
+                .WithMany()
+                .HasForeignKey(r => r.BusId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ── IssueReports ──────────────────────────────────────────────────
+            modelBuilder.Entity<IssueReport>()
+                .ToTable("issue_reports");
+
+            modelBuilder.Entity<IssueReport>()
+                .HasOne(ir => ir.Passenger)
+                .WithMany()
+                .HasForeignKey(ir => ir.PassengerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<IssueReport>()
+                .HasOne(ir => ir.Bus)
+                .WithMany()
+                .HasForeignKey(ir => ir.BusId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<IssueReport>()
+                .HasOne(ir => ir.Trip)
+                .WithMany()
+                .HasForeignKey(ir => ir.TripId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // ── RegularPassengerRequests ──────────────────────────────────────
+            modelBuilder.Entity<RegularPassengerRequest>()
+                .ToTable("regular_passenger_requests");
+
+            // A passenger can only have one active request per bus
+            modelBuilder.Entity<RegularPassengerRequest>()
+                .HasIndex(r => new { r.PassengerId, r.BusId })
+                .IsUnique();
+
+            modelBuilder.Entity<RegularPassengerRequest>()
+                .HasOne(r => r.Passenger)
+                .WithMany()
+                .HasForeignKey(r => r.PassengerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RegularPassengerRequest>()
+                .HasOne(r => r.Bus)
+                .WithMany()
+                .HasForeignKey(r => r.BusId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RegularPassengerRequest>()
+                .HasOne(r => r.ReviewedBy)
+                .WithMany()
+                .HasForeignKey(r => r.ReviewedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

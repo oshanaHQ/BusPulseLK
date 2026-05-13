@@ -1,4 +1,3 @@
-// app/(tabs)/home.tsx
 import React from 'react';
 import {
   View,
@@ -7,19 +6,32 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { useAuth } from '../../context/AuthContext';
 
 const HomeScreen = () => {
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Logout', style: 'destructive', onPress: () => logout() },
+    ]);
+  };
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header / Search */}
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.appTitle}>BusPulse LK</Text>
-        <TouchableOpacity style={styles.profileIcon}>
-          <Ionicons name="person-circle-outline" size={32} color="#FFFFFF" />
+        <View>
+          <Text style={styles.appTitle}>BusPulse LK</Text>
+          <Text style={styles.subtitle}>Welcome, {user?.fullName ?? 'Passenger'}</Text>
+        </View>
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+          <Ionicons name="log-out-outline" size={26} color="#FF6200" />
         </TouchableOpacity>
       </View>
 
@@ -186,7 +198,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FF6200',
   },
-  profileIcon: {
+  subtitle: {
+    fontSize: 12,
+    color: '#AAAAAA',
+    marginTop: 2,
+  },
+  logoutBtn: {
     padding: 4,
   },
   searchContainer: {
