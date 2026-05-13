@@ -151,14 +151,32 @@ namespace BusPulseLK.Controllers
             if (!TimeSpan.TryParse(dto.DepartureTime, out var departure))
                 return BadRequest(new { message = "Invalid departure time format. Use HH:mm or HH:mm:ss." });
 
-            // Check for duplicate schedule
-            var duplicate = await _context.Timetables.AnyAsync(t =>
-                t.BusId == dto.BusId &&
-                t.RouteId == dto.RouteId &&
-                t.DepartureTime == departure);
+            // Check for existing schedule (active or inactive)
+            var existing = await _context.Timetables
+                .FirstOrDefaultAsync(t =>
+                    t.BusId == dto.BusId &&
+                    t.RouteId == dto.RouteId &&
+                    t.DepartureTime == departure);
 
-            if (duplicate)
-                return Conflict(new { message = "This bus already has a timetable entry for that route at this time." });
+            if (existing != null)
+            {
+                if (existing.IsActive)
+                {
+                    return Conflict(new { message = "This bus already has an active timetable entry for that route at this time." });
+                }
+                else
+                {
+                    // Reactivate the existing one
+                    existing.IsActive = true;
+                    existing.OperatingDays = dto.OperatingDays;
+                    existing.CreatedById = ownerId.Value;
+                    await _context.SaveChangesAsync();
+                    
+                    existing.Bus = bus;
+                    existing.Route = route;
+                    return Ok(MapToDto(existing));
+                }
+            }
 
             var timetable = new Timetable
             {

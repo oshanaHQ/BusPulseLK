@@ -90,7 +90,10 @@ const BusOwnerDashboard = () => {
               <Text style={styles.cardText}>Manage Buses</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.card}>
+            <TouchableOpacity 
+              style={styles.card}
+              onPress={() => router.push('./assign-route')}
+            >
               <Ionicons name="location-outline" size={40} color="#FF6200" />
               <Text style={styles.cardText}>Manage Routes</Text>
             </TouchableOpacity>
