@@ -26,7 +26,9 @@ function RouteGuard() {
       router.replace('/(auth)/login');
     } else if (isAuthenticated && inAuthGroup) {
       // Already logged in — redirect to correct dashboard
-      const role = user?.role?.toLowerCase();
+      // Handle both camelCase and PascalCase just in case from the backend
+      const role = (user?.role || (user as any)?.Role || '').toLowerCase();
+      
       switch (role) {
         case 'passenger':
           router.replace('/passenger/dashboard');
@@ -42,10 +44,12 @@ function RouteGuard() {
           router.replace('/worker/dashboard');
           break;
         default:
+          // If role is unknown, maybe logout and go back to login
+          console.warn('Unknown user role:', role);
           router.replace('/(auth)/login');
       }
     }
-  }, [isAuthenticated, isLoading, segments]);
+  }, [isAuthenticated, isLoading, segments, user]);
 
   // Show spinner while reading stored session
   if (isLoading) {
