@@ -32,7 +32,7 @@ interface RouteStop {
 interface Route {
   id: number;
   name: string;
-  description?: string;
+  routeNumber: string;
   originTown: Town;
   destinationTown: Town;
   isActive: boolean;
@@ -48,7 +48,7 @@ const ManageRoutes = () => {
 
   // Form State
   const [routeName, setRouteName] = useState('');
-  const [routeDescription, setRouteDescription] = useState('');
+  const [routeNumber, setRouteNumber] = useState('');
   const [selectedTownIds, setSelectedTownIds] = useState<number[]>([]);
   const [showTownPicker, setShowTownPicker] = useState(false);
 
@@ -76,12 +76,12 @@ const ManageRoutes = () => {
     if (route) {
       setEditingRoute(route);
       setRouteName(route.name);
-      setRouteDescription(route.description || '');
+      setRouteNumber(route.routeNumber);
       setSelectedTownIds(route.stops.map(s => s.town.id));
     } else {
       setEditingRoute(null);
       setRouteName('');
-      setRouteDescription('');
+      setRouteNumber('');
       setSelectedTownIds([]);
     }
     setModalVisible(true);
@@ -110,7 +110,7 @@ const ManageRoutes = () => {
 
     const payload = {
       name: routeName,
-      description: routeDescription,
+      routeNumber: routeNumber,
       originTownId: selectedTownIds[0],
       destinationTownId: selectedTownIds[selectedTownIds.length - 1],
       stopTownIds: selectedTownIds,
@@ -243,14 +243,13 @@ const ManageRoutes = () => {
                 onChangeText={setRouteName}
               />
 
-              <Text style={styles.label}>Description (Optional)</Text>
+              <Text style={styles.label}>Route Number</Text>
               <TextInput
-                style={[styles.input, { height: 80 }]}
-                placeholder="Brief route details..."
+                style={styles.input}
+                placeholder="e.g. 400 or 400/1"
                 placeholderTextColor="#555"
-                multiline
-                value={routeDescription}
-                onChangeText={setRouteDescription}
+                value={routeNumber}
+                onChangeText={setRouteNumber}
               />
 
               <View style={styles.sectionHeader}>

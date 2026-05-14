@@ -31,7 +31,7 @@ function RouteGuard() {
       
       switch (role) {
         case 'passenger':
-          router.replace('/passenger/dashboard');
+          router.replace('/passenger');
           break;
         case 'busowner':
           router.replace('/owner/dashboard');

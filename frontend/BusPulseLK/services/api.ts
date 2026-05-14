@@ -28,6 +28,7 @@ async function apiGet<T>(path: string): Promise<T> {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || `GET ${path} failed (${res.status})`);
   }
+  if (res.status === 204) return {} as T;
   return res.json();
 }
 
@@ -46,6 +47,7 @@ async function apiPost<T>(path: string, body: unknown): Promise<T> {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || `POST ${path} failed (${res.status})`);
   }
+  if (res.status === 204) return {} as T;
   return res.json();
 }
 
@@ -64,6 +66,7 @@ async function apiPut<T>(path: string, body: unknown): Promise<T> {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || `PUT ${path} failed (${res.status})`);
   }
+  if (res.status === 204) return {} as T;
   return res.json();
 }
 
@@ -82,6 +85,7 @@ async function apiPatch<T>(path: string, body?: unknown): Promise<T> {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || `PATCH ${path} failed (${res.status})`);
   }
+  if (res.status === 204) return {} as T;
   return res.json();
 }
 
@@ -99,6 +103,7 @@ async function apiDelete<T>(path: string): Promise<T> {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || `DELETE ${path} failed (${res.status})`);
   }
+  if (res.status === 204) return {} as T;
   return res.json();
 }
 
@@ -220,9 +225,11 @@ export const timetableService = {
 
 export const tripService = {
   start: (timetableId: number) => apiPost('/trips/start', { timetableId }),
-  updateProgress: (tripId: number, townId: number) => apiPost(`/trips/${tripId}/progress`, { townId }),
-  end: (tripId: number) => apiPost(`/trips/${tripId}/end`, {}),
   getById: (id: number) => apiGet(`/trips/${id}`),
+  getActiveByBus: (busId: number) => apiGet(`/trips/active/${busId}`),
+  updateProgress: (id: number, townId: number) => 
+    apiPost(`/trips/${id}/progress`, { townId }),
+  end: (id: number) => apiPost(`/trips/${id}/end`, {}),
 };
 
 // ── Town service ──────────────────────────────────────────────────────────────
@@ -233,4 +240,27 @@ export const townService = {
   create: (data: unknown) => apiPost('/towns', data),
   update: (id: number, data: unknown) => apiPut(`/towns/${id}`, data),
   delete: (id: number) => apiDelete(`/towns/${id}`),
+};
+// -- Passenger services --------------------------------------------------------
+
+export const searchService = {
+  buses: (params: any) => {
+    const query = new URLSearchParams(params).toString();
+    return apiGet(`/search/buses?${query}`);
+  }
+};
+
+export const favoriteService = {
+  getAll: () => apiGet('/favorites'),
+  toggle: (busId: number) => apiPost(`/favorites/toggle/${busId}`, {}),
+};
+
+export const ratingService = {
+  submit: (data: { busId: number; stars: number; comment?: string }) => 
+    apiPost('/ratings', data),
+};
+
+export const reportService = {
+  submit: (data: { busId: number; tripId?: number; description: string }) => 
+    apiPost('/issueReports', data),
 };

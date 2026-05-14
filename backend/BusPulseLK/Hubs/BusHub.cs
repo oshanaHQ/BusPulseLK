@@ -20,8 +20,8 @@ namespace BusPulseLK.Hubs
         // This is called by the Driver/Conductor app
         public async Task UpdateBusStatus(string busId, object status)
         {
-            // status could contain { currentStopId, nextStopId, lat, lng, lastUpdated }
-            await Clients.Group($"Bus_{busId}").SendAsync("ReceiveBusStatus", status);
+            // Broadcast to the group including the busId so clients can verify
+            await Clients.Group($"Bus_{busId}").SendAsync("ReceiveBusStatus", busId, status);
         }
 
         // Broadcast a general announcement

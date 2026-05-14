@@ -104,7 +104,7 @@ namespace BusPulseLK.Controllers
             var route = new BusPulseLK.Models.Route
             {
                 Name            = dto.Name.Trim(),
-                Description     = dto.Description?.Trim(),
+                RouteNumber     = dto.RouteNumber.Trim(),
                 OriginTownId    = dto.OriginTownId,
                 DestinationTownId = dto.DestinationTownId,
                 CreatedById     = adminId.Value,
@@ -149,7 +149,7 @@ namespace BusPulseLK.Controllers
             if (route == null) return NotFound(new { message = "Route not found." });
 
             if (dto.Name != null)        route.Name        = dto.Name.Trim();
-            if (dto.Description != null) route.Description = dto.Description.Trim();
+            if (dto.RouteNumber != null) route.RouteNumber = dto.RouteNumber.Trim();
             if (dto.IsActive.HasValue)   route.IsActive    = dto.IsActive.Value;
 
             // Replace stops if provided
@@ -314,7 +314,7 @@ namespace BusPulseLK.Controllers
         {
             Id          = r.Id,
             Name        = r.Name,
-            Description = r.Description,
+            RouteNumber = r.RouteNumber,
             IsActive    = r.IsActive,
             CreatedAt   = r.CreatedAt,
             OriginTown  = new TownSummaryDto { Id = r.OriginTown.Id, Name = r.OriginTown.Name },

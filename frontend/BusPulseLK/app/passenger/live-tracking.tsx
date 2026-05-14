@@ -1,0 +1,258 @@
+// app/passenger/live-tracking.tsx
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  TouchableOpacity,
+  ActivityIndicator,
+  ScrollView,
+  StatusBar,
+  Modal,
+  TextInput,
+  Alert,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
+import * as signalR from '@microsoft/signalr';
+import { tripService, ratingService, reportService, API_BASE_URL } from '../../services/api';
+
+const LiveTrackingScreen = () => {
+  const { busId, timetableId } = useLocalSearchParams();
+  const [trip, setTrip] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<any>(null);
+  
+  // Rating/Report states
+  const [ratingModal, setRatingModal] = useState(false);
+  const [reportModal, setReportModal] = useState(false);
+  const [stars, setStars] = useState(0);
+  const [comment, setComment] = useState('');
+  const [reportDesc, setReportDesc] = useState('');
+
+  const connectionRef = useRef<signalR.HubConnection | null>(null);
+
+  useEffect(() => {
+    loadInitialData();
+    setupSignalR();
+    return () => {
+      if (connectionRef.current) connectionRef.current.stop();
+    };
+  }, []);
+
+  const loadInitialData = async () => {
+    try {
+      // Get active trip for this bus
+      const data: any = await tripService.getActiveByBus(Number(busId));
+      setTrip(data);
+      
+      // Populate status immediately from initial data
+      setStatus({
+        lastStopName: data.lastPassedTownName || 'Starting Point',
+        nextStopName: data.nextTownName || '...',
+        progressPercent: data.progressPercent || 0,
+      });
+    } catch (error) {
+      console.log('No active trip found');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const setupSignalR = async () => {
+    // Prevent multiple connections
+    if (connectionRef.current) return;
+
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl(`${API_BASE_URL.replace('/api', '')}/hubs/bus`)
+      .withAutomaticReconnect()
+      .build();
+
+    connection.on('ReceiveBusStatus', (updateBusId, busStatus) => {
+      // backend now sends (busId, status)
+      if (updateBusId.toString() === busId?.toString()) {
+        setStatus(busStatus);
+      }
+    });
+
+    try {
+      await connection.start();
+      console.log('SignalR Connected');
+      await connection.invoke('JoinBusGroup', busId.toString());
+      connectionRef.current = connection;
+    } catch (err) {
+      console.log('SignalR Error:', err);
+    }
+  };
+
+  const submitRating = async () => {
+    try {
+      await ratingService.submit({ busId: Number(busId), stars, comment });
+      Alert.alert('Success', 'Thank you for your feedback!');
+      setRatingModal(false);
+    } catch (error: any) {
+      Alert.alert('Error', error.message);
+    }
+  };
+
+  const submitReport = async () => {
+    try {
+      await reportService.submit({ busId: Number(busId), tripId: trip?.id, description: reportDesc });
+      Alert.alert('Success', 'Your report has been submitted.');
+      setReportModal(false);
+    } catch (error: any) {
+      Alert.alert('Error', error.message);
+    }
+  };
+
+  if (loading) return <View style={styles.center}><ActivityIndicator color="#FF6200" /></View>;
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={24} color="#FFF" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Live Tracking</Text>
+        <View style={styles.liveBadge}><Text style={styles.liveText}>LIVE</Text></View>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Status Card */}
+        <View style={styles.statusCard}>
+          <View style={styles.busIconContainer}>
+            <Ionicons name="bus" size={40} color="#FF6200" />
+          </View>
+          <Text style={styles.statusLabel}>Current Location</Text>
+          <Text style={styles.locationName}>{status?.lastStopName || 'Waiting for update...'}</Text>
+          
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${status?.progressPercent || 0}%` }]} />
+            </View>
+            <View style={styles.progressLabels}>
+              <Text style={styles.progressText}>Progress</Text>
+              <Text style={styles.progressText}>{Math.round(status?.progressPercent || 0)}%</Text>
+            </View>
+          </View>
+
+          <View style={styles.nextStopBox}>
+            <Text style={styles.nextLabel}>Next Stop</Text>
+            <Text style={styles.nextValue}>{status?.nextStopName || '...'}</Text>
+          </View>
+        </View>
+
+        {/* Action Buttons (Rating/Report) */}
+        <View style={styles.actionRow}>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => setRatingModal(true)}>
+            <Ionicons name="star-outline" size={20} color="#FF6200" />
+            <Text style={styles.actionBtnText}>Rate Bus</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.actionBtn, styles.reportBtn]} onPress={() => setReportModal(true)}>
+            <Ionicons name="alert-circle-outline" size={20} color="#D32F2F" />
+            <Text style={[styles.actionBtnText, { color: '#D32F2F' }]}>Report Issue</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+
+      {/* Rating Modal */}
+      <Modal visible={ratingModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Rate this Bus</Text>
+            <View style={styles.starsRow}>
+              {[1, 2, 3, 4, 5].map(s => (
+                <TouchableOpacity key={s} onPress={() => setStars(s)}>
+                  <Ionicons name={stars >= s ? "star" : "star-outline"} size={40} color="#FF6200" />
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TextInput 
+              style={styles.modalInput} 
+              placeholder="Tell us more (Optional)" 
+              placeholderTextColor="#666"
+              multiline
+              value={comment}
+              onChangeText={setComment}
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setRatingModal(false)}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.submitBtn} onPress={submitRating}>
+                <Text style={styles.submitText}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Report Modal */}
+      <Modal visible={reportModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={[styles.modalTitle, { color: '#D32F2F' }]}>Report a Problem</Text>
+            <TextInput 
+              style={[styles.modalInput, { height: 120 }]} 
+              placeholder="Describe the issue (e.g. bus is very late, bad driving, etc.)" 
+              placeholderTextColor="#666"
+              multiline
+              value={reportDesc}
+              onChangeText={setReportDesc}
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setReportModal(false)}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.submitBtn, { backgroundColor: '#D32F2F' }]} onPress={submitReport}>
+                <Text style={styles.submitText}>Submit Report</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#000' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#1A1A1A' },
+  backBtn: { padding: 5 },
+  headerTitle: { color: '#FFF', fontSize: 20, fontWeight: 'bold', marginLeft: 15, flex: 1 },
+  liveBadge: { backgroundColor: '#D32F2F', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
+  liveText: { color: '#FFF', fontSize: 10, fontWeight: 'bold' },
+  content: { padding: 20 },
+  statusCard: { backgroundColor: '#111', borderRadius: 20, padding: 25, alignItems: 'center' },
+  busIconContainer: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#FF620011', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  statusLabel: { color: '#666', fontSize: 14, fontWeight: 'bold', textTransform: 'uppercase' },
+  locationName: { color: '#FFF', fontSize: 24, fontWeight: 'bold', marginTop: 5, textAlign: 'center' },
+  progressContainer: { width: '100%', marginTop: 30 },
+  progressBar: { height: 8, backgroundColor: '#222', borderRadius: 4, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: '#FF6200' },
+  progressLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
+  progressText: { color: '#666', fontSize: 12 },
+  nextStopBox: { width: '100%', backgroundColor: '#1A1A1A', padding: 15, borderRadius: 12, marginTop: 25, alignItems: 'center' },
+  nextLabel: { color: '#FF6200', fontSize: 12, fontWeight: 'bold' },
+  nextValue: { color: '#FFF', fontSize: 18, fontWeight: '600', marginTop: 5 },
+  actionRow: { flexDirection: 'row', gap: 15, marginTop: 25 },
+  actionBtn: { flex: 1, backgroundColor: '#111', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 15, borderRadius: 12, gap: 8, borderWidth: 1, borderColor: '#FF620044' },
+  reportBtn: { borderColor: '#D32F2F44' },
+  actionBtnText: { color: '#FF6200', fontWeight: 'bold' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', padding: 20 },
+  modalContent: { backgroundColor: '#111', borderRadius: 20, padding: 25 },
+  modalTitle: { color: '#FFF', fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
+  starsRow: { flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 20 },
+  modalInput: { backgroundColor: '#000', color: '#FFF', borderRadius: 12, padding: 15, height: 100, textAlignVertical: 'top', fontSize: 16 },
+  modalActions: { flexDirection: 'row', gap: 15, marginTop: 25 },
+  cancelBtn: { flex: 1, paddingVertical: 15, alignItems: 'center' },
+  cancelText: { color: '#666', fontWeight: 'bold' },
+  submitBtn: { flex: 2, backgroundColor: '#FF6200', paddingVertical: 15, borderRadius: 12, alignItems: 'center' },
+  submitText: { color: '#FFF', fontWeight: 'bold' },
+});
+
+export default LiveTrackingScreen;

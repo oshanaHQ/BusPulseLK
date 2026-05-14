@@ -10,8 +10,9 @@ namespace BusPulseLK.Models
         [StringLength(150, MinimumLength = 3)]
         public string Name { get; set; } = null!;
 
-        [StringLength(500)]
-        public string? Description { get; set; }
+        [Required]
+        [StringLength(20)]
+        public string RouteNumber { get; set; } = null!;
 
         [Required]
         public int OriginTownId { get; set; }
@@ -34,8 +35,8 @@ namespace BusPulseLK.Models
         [StringLength(150, MinimumLength = 3)]
         public string? Name { get; set; }
 
-        [StringLength(500)]
-        public string? Description { get; set; }
+        [StringLength(20)]
+        public string? RouteNumber { get; set; }
 
         public bool? IsActive { get; set; }
 
@@ -50,7 +51,7 @@ namespace BusPulseLK.Models
     {
         public int Id { get; set; }
         public string Name { get; set; } = null!;
-        public string? Description { get; set; }
+        public string RouteNumber { get; set; } = null!;
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public TownSummaryDto OriginTown { get; set; } = null!;
@@ -185,6 +186,7 @@ namespace BusPulseLK.Models
     {
         public int Id { get; set; }
         public string Name { get; set; } = null!;
+        public string RouteNumber { get; set; } = null!;
         public string OriginTown { get; set; } = null!;
         public string DestinationTown { get; set; } = null!;
     }

@@ -11,10 +11,15 @@ namespace BusPulseLK.Models
     {
         public int Id { get; set; }
 
-        /// <summary>Route display name e.g. "Colombo - Kandy Express"</summary>
+        /// <summary>Descriptive name e.g. "Colombo - Kandy Express"</summary>
         [Required]
         [StringLength(150, MinimumLength = 3)]
         public string Name { get; set; } = null!;
+
+        /// <summary>Official route number e.g. "400" or "400/1"</summary>
+        [Required]
+        [StringLength(20)]
+        public string RouteNumber { get; set; } = null!;
 
         /// <summary>Optional description / notes about the route</summary>
         [StringLength(500)]

@@ -62,9 +62,12 @@ const AdminDashboard = () => {
               <Text style={styles.cardText}>Bus Approvals</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.card}>
-              <Ionicons name="stats-chart-outline" size={40} color="#FF6200" />
-              <Text style={styles.cardText}>System Statistics</Text>
+            <TouchableOpacity 
+              style={styles.card}
+              onPress={() => router.push('./manage-towns')}
+            >
+              <Ionicons name="map-outline" size={40} color="#FF6200" />
+              <Text style={styles.cardText}>Manage Cities</Text>
             </TouchableOpacity>
           </View>
 

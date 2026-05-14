@@ -82,6 +82,44 @@ namespace BusPulseLK.Controllers
             return Ok(MapToDto(trip));
         }
 
+        [HttpGet("active/{busId}")]
+        public async Task<ActionResult<TripResponseDto>> GetActiveByBus(int busId)
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var trip = await _context.Trips
+                .Include(t => t.Timetable).ThenInclude(tt => tt.Route).ThenInclude(r => r.Stops).ThenInclude(s => s.Town)
+                .Where(t => t.Timetable.BusId == busId && t.TripDate == today && t.Status == "Started")
+                .OrderByDescending(t => t.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (trip == null) return NotFound(new { message = "No active trip found for this bus today." });
+
+            var dto = MapToDto(trip);
+            
+            // Calculate progress for DTO
+            if (trip.LastPassedTownId.HasValue)
+            {
+                var stops = trip.Timetable.Route.Stops.OrderBy(s => s.StopOrder).ToList();
+                var lastStop = stops.FirstOrDefault(s => s.TownId == trip.LastPassedTownId);
+                if (lastStop != null)
+                {
+                    dto.LastPassedTownName = lastStop.Town.Name;
+                    var lastIndex = stops.IndexOf(lastStop);
+                    if (lastIndex + 1 < stops.Count)
+                    {
+                        dto.NextTownName = stops[lastIndex + 1].Town.Name;
+                    }
+                    else
+                    {
+                        dto.NextTownName = "Destination Reached";
+                    }
+                    dto.ProgressPercent = ((double)(lastIndex + 1) / stops.Count) * 100;
+                }
+            }
+
+            return Ok(dto);
+        }
+
         // ────────────────────────────────────────────────────────────────────
         // POST api/trips/{id}/progress
         // Mark a town as passed
@@ -91,6 +129,8 @@ namespace BusPulseLK.Controllers
         public async Task<IActionResult> UpdateProgress(int id, [FromBody] UpdateProgressDto dto)
         {
             var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+
             var trip = await _context.Trips
                 .Include(t => t.Timetable).ThenInclude(tt => tt.Bus)
                 .FirstOrDefaultAsync(t => t.Id == id);
@@ -176,10 +216,13 @@ namespace BusPulseLK.Controllers
     public class TripResponseDto
     {
         public int Id { get; set; }
-        public string Status { get; set; }
-        public string TripDate { get; set; }
+        public string Status { get; set; } = null!;
+        public string TripDate { get; set; } = null!;
         public int TimetableId { get; set; }
         public int? LastPassedTownId { get; set; }
+        public string? LastPassedTownName { get; set; }
+        public string? NextTownName { get; set; }
+        public double ProgressPercent { get; set; }
         public bool IsActive { get; set; }
     }
 }

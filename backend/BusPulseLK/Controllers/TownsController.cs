@@ -70,6 +70,37 @@ namespace BusPulseLK.Controllers
             // Return 201 Created with location
             return CreatedAtAction(nameof(GetAllTowns), new { id = newTown.Id }, newTown);
         }
+
+        // DELETE: api/towns/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteTown(int id)
+        {
+            var town = await _context.Towns.FindAsync(id);
+            if (town == null) return NotFound();
+
+            // Check if town is used in any routes (as origin, destination or stop)
+            var isUsedInRoutes = await _context.Routes.AnyAsync(r => r.OriginTownId == id || r.DestinationTownId == id) 
+                               || await _context.RouteStops.AnyAsync(rs => rs.TownId == id);
+            
+            if (isUsedInRoutes)
+            {
+                return BadRequest(new { message = "Cannot delete city. It is currently being used in one or more bus routes." });
+            }
+
+            // Check if used in ongoing trips or progress
+            var isUsedInTrips = await _context.Trips.AnyAsync(t => t.LastPassedTownId == id)
+                              || await _context.TownProgresses.AnyAsync(tp => tp.TownId == id);
+
+            if (isUsedInTrips)
+            {
+                return BadRequest(new { message = "Cannot delete city. It has historical trip data associated with it." });
+            }
+
+            _context.Towns.Remove(town);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
 
     // DTO for creating town (input validation)

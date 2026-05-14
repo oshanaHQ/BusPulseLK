@@ -14,7 +14,9 @@ import {
   Alert,
   StatusBar,
   RefreshControl,
+  Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { timetableService, busService, routeService } from '../../services/api';
@@ -64,6 +66,8 @@ const AssignRoute = () => {
   const [selectedBusId, setSelectedBusId] = useState<number | null>(null);
   const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null);
   const [departureTime, setDepartureTime] = useState('08:00');
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [timeValue, setTimeValue] = useState(new Date());
   const [operatingDays, setOperatingDays] = useState('Daily');
 
   // Search/Filter for Pickers
@@ -123,6 +127,16 @@ const AssignRoute = () => {
       Alert.alert('Error', error.message || 'Failed to assign route');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const onTimeChange = (event: any, selectedDate?: Date) => {
+    setShowTimePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setTimeValue(selectedDate);
+      const hours = selectedDate.getHours().toString().padStart(2, '0');
+      const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
+      setDepartureTime(`${hours}:${minutes}`);
     }
   };
 
@@ -255,13 +269,23 @@ const AssignRoute = () => {
               <View style={styles.row}>
                 <View style={{ flex: 1, marginRight: 10 }}>
                   <Text style={styles.label}>Departure Time</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g. 08:30"
-                    placeholderTextColor="#555"
-                    value={departureTime}
-                    onChangeText={setDepartureTime}
-                  />
+                  <TouchableOpacity 
+                    style={styles.pickerTrigger}
+                    onPress={() => setShowTimePicker(true)}
+                  >
+                    <Text style={styles.pickerText}>{departureTime}</Text>
+                    <Ionicons name="time-outline" size={20} color="#FF6200" />
+                  </TouchableOpacity>
+
+                  {showTimePicker && (
+                    <DateTimePicker
+                      value={timeValue}
+                      mode="time"
+                      is24Hour={true}
+                      display="default"
+                      onChange={onTimeChange}
+                    />
+                  )}
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.label}>Operating Days</Text>
