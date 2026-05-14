@@ -4,7 +4,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TextInput,
   TouchableOpacity,
   FlatList,
@@ -13,6 +12,7 @@ import {
   Modal,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -21,6 +21,7 @@ import { searchService, townService, favoriteService } from '../../../services/a
 type SearchMode = 'Name' | 'Destination' | 'Route';
 
 const SearchScreen = () => {
+  const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<SearchMode>('Name');
   const [query, setQuery] = useState('');
   const [originId, setOriginId] = useState<number | null>(null);
@@ -126,7 +127,7 @@ const SearchScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" />
       
       <View style={styles.header}>
@@ -259,7 +260,7 @@ const SearchScreen = () => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 

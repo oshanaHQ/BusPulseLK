@@ -5,13 +5,13 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   Alert,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
@@ -38,6 +38,7 @@ interface TimetableEntry {
 
 const StaffDashboard = () => {
   const { user, logout } = useAuth();
+  const insets = useSafeAreaInsets();
   const [bus, setBus] = useState<Bus | null>(null);
   const [routes, setRoutes] = useState<TimetableEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,103 +93,124 @@ const StaffDashboard = () => {
   };
 
   return (
-    <>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar backgroundColor="#000000" barStyle="light-content" />
-      <SafeAreaView style={styles.container}>
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6200" />
-          }
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.title}>{user?.role} Dashboard</Text>
-              <Text style={styles.subtitle}>Welcome, {user?.fullName ?? 'Staff'}</Text>
+      <ScrollView 
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20 }]}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6200" />
+        }
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.title}>{user?.role} Dashboard</Text>
+            <Text style={styles.subtitle}>Welcome, {user?.fullName ?? 'Staff'}</Text>
+          </View>
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+            <Ionicons name="log-out-outline" size={24} color="#FF6200" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Bus Assignment Card */}
+        <View style={styles.content}>
+          {!bus && !loading ? (
+            <View style={styles.noBusCard}>
+              <Ionicons name="alert-circle-outline" size={48} color="#FF6200" />
+              <Text style={styles.noBusText}>No Bus Assigned</Text>
+              <Text style={styles.noBusSubtext}>Please contact your bus owner to assign you to a vehicle.</Text>
             </View>
-            <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-              <Ionicons name="log-out-outline" size={24} color="#FF6200" />
+          ) : (
+            bus && (
+              <View style={styles.busHero}>
+                <View style={styles.busIconContainer}>
+                  <Ionicons name="bus" size={40} color="#FFFFFF" />
+                </View>
+                <View style={styles.busHeroInfo}>
+                  <Text style={styles.heroPlate}>{bus.numberPlate}</Text>
+                  <Text style={styles.heroName}>{bus.name || 'Unnamed Bus'}</Text>
+                  <View style={styles.heroBadge}>
+                    <Text style={styles.heroBadgeText}>{bus.busType}</Text>
+                  </View>
+                </View>
+              </View>
+            )
+          )}
+
+          {/* Action Grid */}
+          <View style={styles.grid}>
+            <TouchableOpacity style={styles.card}>
+              <Ionicons name="play-outline" size={40} color="#FF6200" />
+              <Text style={styles.cardText}>Start Trip</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.card}>
+              <Ionicons name="calendar-outline" size={40} color="#FF6200" />
+              <Text style={styles.cardText}>Schedule</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.card}>
+              <Ionicons name="megaphone-outline" size={40} color="#FF6200" />
+              <Text style={styles.cardText}>Announce</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.card}>
+              <Ionicons name="chatbubbles-outline" size={40} color="#FF6200" />
+              <Text style={styles.cardText}>Support</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Bus Assignment Card */}
-          <View style={styles.content}>
-            {!bus && !loading ? (
-              <View style={styles.noBusCard}>
-                <Ionicons name="alert-circle-outline" size={48} color="#FF6200" />
-                <Text style={styles.noBusText}>No Bus Assigned</Text>
-                <Text style={styles.noBusSubtext}>Please contact your bus owner to assign you to a vehicle.</Text>
-              </View>
-            ) : (
-              bus && (
-                <View style={styles.busHero}>
-                  <View style={styles.busIconContainer}>
-                    <Ionicons name="bus" size={40} color="#FFFFFF" />
-                  </View>
-                  <View style={styles.busHeroInfo}>
-                    <Text style={styles.heroPlate}>{bus.numberPlate}</Text>
-                    <Text style={styles.heroName}>{bus.name || 'Unnamed Bus'}</Text>
-                    <View style={styles.heroBadge}>
-                      <Text style={styles.heroBadgeText}>{bus.busType}</Text>
-                    </View>
-                  </View>
-                </View>
-              )
-            )}
-
-            {/* Action Grid */}
-            <View style={styles.grid}>
-              <TouchableOpacity style={styles.card}>
-                <Ionicons name="play-outline" size={40} color="#FF6200" />
-                <Text style={styles.cardText}>Start Trip</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.card}>
-                <Ionicons name="calendar-outline" size={40} color="#FF6200" />
-                <Text style={styles.cardText}>Schedule</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.card}>
-                <Ionicons name="megaphone-outline" size={40} color="#FF6200" />
-                <Text style={styles.cardText}>Announce</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.card}>
-                <Ionicons name="chatbubbles-outline" size={40} color="#FF6200" />
-                <Text style={styles.cardText}>Support</Text>
-              </TouchableOpacity>
+          {/* Assigned Routes Section */}
+          <Text style={styles.sectionTitle}>Assigned Routes</Text>
+          {loading ? (
+            <ActivityIndicator color="#FF6200" style={{ marginTop: 20 }} />
+          ) : routes.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No routes assigned to your bus.</Text>
             </View>
+          ) : (
+            routes.map((route) => (
+              <TouchableOpacity 
+                key={route.id} 
+                style={styles.routeItem}
+                onPress={() => startTrip(route)}
+              >
+                <View style={styles.routeMain}>
+                  <Text style={styles.routeTitle}>{route.route.name}</Text>
+                  <Text style={styles.routeDetails}>{route.route.originTown} → {route.route.destinationTown}</Text>
+                </View>
+                <View style={styles.routeSide}>
+                  <View style={styles.timeBadge}>
+                    <Text style={styles.timeBadgeText}>{route.departureTime}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#FF6200" />
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+      </ScrollView>
 
-            {/* Assigned Routes Section */}
-            <Text style={styles.sectionTitle}>Assigned Routes</Text>
-            {loading ? (
-              <ActivityIndicator color="#FF6200" style={{ marginTop: 20 }} />
-            ) : routes.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>No routes assigned to your bus.</Text>
-              </View>
-            ) : (
-              routes.map((route) => (
-                <TouchableOpacity 
-                  key={route.id} 
-                  style={styles.routeItem}
-                  onPress={() => startTrip(route)}
-                >
-                  <View style={styles.routeMain}>
-                    <Text style={styles.routeTitle}>{route.route.name}</Text>
-                    <Text style={styles.routeDetails}>{route.route.originTown} → {route.route.destinationTown}</Text>
-                  </View>
-                  <View style={styles.routeSide}>
-                    <View style={styles.timeBadge}>
-                      <Text style={styles.timeBadgeText}>{route.departureTime}</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="#FF6200" />
-                  </View>
-                </TouchableOpacity>
-              ))
-            )}
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    </>
+      {/* Bottom Tab Bar */}
+      <View style={[styles.bottomTab, { height: 60 + insets.bottom, paddingBottom: insets.bottom }]}>
+        <TouchableOpacity style={styles.tabItem}>
+          <Ionicons name="home" size={26} color="#FF6200" />
+          <Text style={[styles.tabLabel, { color: '#FF6200' }]}>Home</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.tabItem}>
+          <Ionicons name="calendar-outline" size={26} color="#AAAAAA" />
+          <Text style={styles.tabLabel}>Schedule</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.tabItem}>
+          <Ionicons name="megaphone-outline" size={26} color="#AAAAAA" />
+          <Text style={styles.tabLabel}>Announce</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.tabItem}>
+          <Ionicons name="person-outline" size={26} color="#AAAAAA" />
+          <Text style={styles.tabLabel}>Profile</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
@@ -198,14 +220,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 20,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingTop: 10,
     paddingBottom: 24,
   },
   title: {
@@ -365,6 +387,27 @@ const styles = StyleSheet.create({
     color: '#FF6200',
     fontSize: 13,
     fontWeight: 'bold',
+  },
+  bottomTab: {
+    flexDirection: 'row',
+    backgroundColor: '#000000',
+    borderTopWidth: 1,
+    borderTopColor: '#222222',
+    paddingHorizontal: 20,
+    justifyContent: 'space-around',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  tabItem: {
+    alignItems: 'center',
+  },
+  tabLabel: {
+    color: '#AAAAAA',
+    fontSize: 11,
+    marginTop: 4,
   },
 });
 

@@ -4,13 +4,13 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   Alert,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
@@ -27,6 +27,7 @@ interface Bus {
 
 const BusOwnerDashboard = () => {
   const { user, logout } = useAuth();
+  const insets = useSafeAreaInsets();
   const [buses, setBuses] = useState<Bus[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -60,132 +61,130 @@ const BusOwnerDashboard = () => {
   };
 
   return (
-    <>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar backgroundColor="#000000" barStyle="light-content" />
-      <SafeAreaView style={styles.container}>
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6200" />
-          }
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.title}>Bus Owner Dashboard</Text>
-              <Text style={styles.subtitle}>Welcome, {user?.fullName ?? 'Owner'}</Text>
-            </View>
-            <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-              <Ionicons name="log-out-outline" size={24} color="#FF6200" />
-            </TouchableOpacity>
+      <ScrollView 
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 + insets.bottom }]}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6200" />
+        }
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.title}>Owner Dashboard</Text>
+            <Text style={styles.subtitle}>Welcome, {user?.fullName ?? 'Owner'}</Text>
           </View>
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+            <Ionicons name="log-out-outline" size={24} color="#FF6200" />
+          </TouchableOpacity>
+        </View>
 
-          {/* Action Grid */}
-          <View style={styles.grid}>
-            <TouchableOpacity 
-              style={styles.card}
-              onPress={() => router.push('./manage-buses')}
-            >
-              <Ionicons name="bus-outline" size={40} color="#FF6200" />
-              <Text style={styles.cardText}>Manage Buses</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.card}
-              onPress={() => router.push('./assign-route')}
-            >
-              <Ionicons name="location-outline" size={40} color="#FF6200" />
-              <Text style={styles.cardText}>Manage Routes</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.card}
-              onPress={() => router.push('./manage-staff')}
-            >
-              <Ionicons name="people-outline" size={40} color="#FF6200" />
-              <Text style={styles.cardText}>Manage Staff</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.card}>
-              <Ionicons name="document-text-outline" size={40} color="#FF6200" />
-              <Text style={styles.cardText}>View Reports</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* My Buses Section */}
-          <View style={styles.busesHeader}>
-            <Text style={styles.sectionTitle}>My Buses</Text>
-            <TouchableOpacity 
-              style={styles.addButton}
-              onPress={() => router.push({ pathname: './manage-buses', params: { openAdd: 'true' } })}
-            >
-              <Text style={styles.addButtonText}>+ Add Bus</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Bus List */}
-          <View style={styles.busList}>
-            {loading ? (
-              <ActivityIndicator color="#FF6200" style={{ marginTop: 20 }} />
-            ) : buses.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>No buses found. Add your first bus!</Text>
-              </View>
-            ) : (
-              buses.map((bus) => (
-                <View key={bus.id} style={styles.busItem}>
-                  <View style={styles.busInfo}>
-                    <Text style={styles.busName}>{bus.numberPlate}</Text>
-                    <Text style={styles.busRoute}>{bus.name || 'No Name'}</Text>
-                    <Text style={styles.driverText}>Driver: {bus.driver?.fullName || 'Not Assigned'}</Text>
-                    <View style={[
-                      styles.statusBadge, 
-                      { backgroundColor: bus.isActive ? '#2E7D3222' : '#FF620022' }
-                    ]}>
-                      <Text style={[
-                        styles.statusText, 
-                        { color: bus.isActive ? '#2E7D32' : '#FF6200' }
-                      ]}>
-                        {bus.isActive ? 'Active' : 'Pending Approval'}
-                      </Text>
-                    </View>
-                  </View>
-                  <TouchableOpacity onPress={() => router.push('./manage-buses')}>
-                    <Text style={styles.editText}>Details</Text>
-                  </TouchableOpacity>
-                </View>
-              ))
-            )}
-          </View>
-        </ScrollView>
-
-        {/* Bottom Tab Bar - Home active */}
-        <View style={styles.bottomTab}>
-          <TouchableOpacity style={styles.tabItem}>
-            <Ionicons name="home" size={28} color="#FF6200" />
-            <Text style={[styles.tabLabel, { color: '#FF6200' }]}>Home</Text>
+        {/* Action Grid */}
+        <View style={styles.grid}>
+          <TouchableOpacity 
+            style={styles.card}
+            onPress={() => router.push('./manage-buses')}
+          >
+            <Ionicons name="bus-outline" size={40} color="#FF6200" />
+            <Text style={styles.cardText}>Manage Buses</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={styles.tabItem}
-            onPress={() => router.push('./manage-buses')}
+            style={styles.card}
+            onPress={() => router.push('./assign-route')}
           >
-            <Ionicons name="bus-outline" size={28} color="#AAAAAA" />
-            <Text style={styles.tabLabel}>Buses</Text>
+            <Ionicons name="location-outline" size={40} color="#FF6200" />
+            <Text style={styles.cardText}>Manage Routes</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tabItem}>
-            <Ionicons name="document-text-outline" size={28} color="#AAAAAA" />
-            <Text style={styles.tabLabel}>Reports</Text>
+          <TouchableOpacity 
+            style={styles.card}
+            onPress={() => router.push('./manage-staff')}
+          >
+            <Ionicons name="people-outline" size={40} color="#FF6200" />
+            <Text style={styles.cardText}>Manage Staff</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tabItem}>
-            <Ionicons name="person-outline" size={28} color="#AAAAAA" />
-            <Text style={styles.tabLabel}>Profile</Text>
+          <TouchableOpacity style={styles.card}>
+            <Ionicons name="document-text-outline" size={40} color="#FF6200" />
+            <Text style={styles.cardText}>View Reports</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
-    </>
+
+        {/* My Buses Section */}
+        <View style={styles.busesHeader}>
+          <Text style={styles.sectionTitle}>My Buses</Text>
+          <TouchableOpacity 
+            style={styles.addButton}
+            onPress={() => router.push({ pathname: './manage-buses', params: { openAdd: 'true' } })}
+          >
+            <Text style={styles.addButtonText}>+ Add Bus</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Bus List */}
+        <View style={styles.busList}>
+          {loading ? (
+            <ActivityIndicator color="#FF6200" style={{ marginTop: 20 }} />
+          ) : buses.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No buses found. Add your first bus!</Text>
+            </View>
+          ) : (
+            buses.map((bus) => (
+              <View key={bus.id} style={styles.busItem}>
+                <View style={styles.busInfo}>
+                  <Text style={styles.busName}>{bus.numberPlate}</Text>
+                  <Text style={styles.busRoute}>{bus.name || 'No Name'}</Text>
+                  <Text style={styles.driverText}>Driver: {bus.driver?.fullName || 'Not Assigned'}</Text>
+                  <View style={[
+                    styles.statusBadge, 
+                    { backgroundColor: bus.isActive ? '#2E7D3222' : '#FF620022' }
+                  ]}>
+                    <Text style={[
+                      styles.statusText, 
+                      { color: bus.isActive ? '#2E7D32' : '#FF6200' }
+                    ]}>
+                      {bus.isActive ? 'Active' : 'Pending Approval'}
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity onPress={() => router.push('./manage-buses')}>
+                  <Ionicons name="chevron-forward" size={24} color="#333" />
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Bottom Tab Bar */}
+      <View style={[styles.bottomTab, { height: 60 + insets.bottom, paddingBottom: insets.bottom }]}>
+        <TouchableOpacity style={styles.tabItem}>
+          <Ionicons name="home" size={26} color="#FF6200" />
+          <Text style={[styles.tabLabel, { color: '#FF6200' }]}>Home</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.tabItem}
+          onPress={() => router.push('./manage-buses')}
+        >
+          <Ionicons name="bus-outline" size={26} color="#AAAAAA" />
+          <Text style={styles.tabLabel}>Buses</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.tabItem}>
+          <Ionicons name="document-text-outline" size={26} color="#AAAAAA" />
+          <Text style={styles.tabLabel}>Reports</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.tabItem}>
+          <Ionicons name="person-outline" size={26} color="#AAAAAA" />
+          <Text style={styles.tabLabel}>Profile</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
@@ -195,14 +194,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 20,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingTop: 10,
     paddingBottom: 20,
   },
   title: {
@@ -306,30 +305,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  editText: {
-    color: '#FF6200',
-    fontSize: 14,
-    fontWeight: '600',
-  },
   bottomTab: {
     flexDirection: 'row',
     backgroundColor: '#000000',
     borderTopWidth: 1,
     borderTopColor: '#222222',
-    paddingVertical: 10,
     paddingHorizontal: 20,
     justifyContent: 'space-around',
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
+    alignItems: 'center',
   },
   tabItem: {
     alignItems: 'center',
   },
   tabLabel: {
     color: '#AAAAAA',
-    fontSize: 12,
+    fontSize: 11,
     marginTop: 4,
   },
   emptyState: {

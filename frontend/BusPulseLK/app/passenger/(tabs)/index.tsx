@@ -4,12 +4,12 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
   StatusBar,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '../../../context/AuthContext';
@@ -17,6 +17,7 @@ import { favoriteService } from '../../../services/api';
 
 const PassengerDashboard = () => {
   const { user, logout } = useAuth();
+  const insets = useSafeAreaInsets();
   const [favorites, setFavorites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -61,7 +62,7 @@ const PassengerDashboard = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" />
       
       {/* Premium Header */}
@@ -158,7 +159,7 @@ const PassengerDashboard = () => {
           favorites.slice(0, 3).map((item) => renderFavoriteItem(item))
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
