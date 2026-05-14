@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ── Base URL ──────────────────────────────────────────────────────────────────
 // Change this to your machine's local IP when testing on a physical device.
-const API_BASE_URL = 'http://10.236.25.49:5251/api';
+export const API_BASE_URL = 'http://10.236.25.49:5251/api';
 
 // ── Token helper ──────────────────────────────────────────────────────────────
 
@@ -167,6 +167,13 @@ export const authService = {
   },
 };
 
+// ── User service ──────────────────────────────────────────────────────────────
+
+export const userService = {
+  searchStaff: (role: 'Driver' | 'Conductor', search?: string) =>
+    apiGet(`/user/staff?role=${role}${search ? `&search=${search}` : ''}`),
+};
+
 // ── Route service ─────────────────────────────────────────────────────────────
 
 export const routeService = {
@@ -207,6 +214,14 @@ export const timetableService = {
   create: (data: unknown) => apiPost('/timetables', data),
   update: (id: number, data: unknown) => apiPut(`/timetables/${id}`, data),
   delete: (id: number) => apiDelete(`/timetables/${id}`),
+};
+
+// ── Trip service ──────────────────────────────────────────────────────────────
+
+export const tripService = {
+  start: (timetableId: number) => apiPost('/trips/start', { timetableId }),
+  updateProgress: (tripId: number, townId: number) => apiPost(`/trips/${tripId}/progress`, { townId }),
+  getById: (id: number) => apiGet(`/trips/${id}`),
 };
 
 // ── Town service ──────────────────────────────────────────────────────────────

@@ -1,12 +1,11 @@
+// app/worker/_layout.tsx
 import { Stack } from 'expo-router';
-import React from 'react';
 
-export default function WorkerLayout() {
+export default function StaffLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false, // ✅ hides "Passenger/Dashboard" top bar
-      }}
-    />
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="dashboard" />
+      <Stack.Screen name="trip-view" />
+    </Stack>
   );
 }

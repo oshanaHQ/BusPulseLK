@@ -8,17 +8,17 @@ namespace BusPulseLK.Models
         public int Id { get; set; } // Primary key
 
         [Required]
-        public string FullName { get; set; }
+        public string FullName { get; set; } = null!;
 
         [Required]
         [EmailAddress]
-        public string Email { get; set; }
+        public string Email { get; set; } = null!;
 
         [Required]
-        public string Password { get; set; } // Store hashed password
+        public string Password { get; set; } = null!; // Store hashed password
 
         [Required]
-        public string Role { get; set; } // "Admin", "BusOwner", "Driver", "Conductor", "Passenger"
+        public string Role { get; set; } = null!; // "Admin", "BusOwner", "Driver", "Conductor", "Passenger"
 
         public bool IsRegularPassenger { get; set; } = false; // Only for passengers
 

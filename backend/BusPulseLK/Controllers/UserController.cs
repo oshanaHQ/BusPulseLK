@@ -72,6 +72,39 @@ namespace BusPulseLK.Controllers
             });
         }
 
+        // ────────────────────────────────────────────────────────────────────
+        // GET api/user/staff?role=Driver&search=...
+        // Admin or BusOwner search for staff
+        // ────────────────────────────────────────────────────────────────────
+        [HttpGet("staff")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,BusOwner")]
+        public async Task<ActionResult<IEnumerable<object>>> SearchStaff(
+            [FromQuery] string role,
+            [FromQuery] string? search = null)
+        {
+            if (role != "Driver" && role != "Conductor")
+                return BadRequest(new { message = "Role must be Driver or Conductor." });
+
+            var query = _context.Users
+                .Where(u => u.Role == role)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                var s = search.ToLower();
+                query = query.Where(u => 
+                    u.FullName.ToLower().Contains(s) || 
+                    u.Email.ToLower().Contains(s));
+            }
+
+            var staff = await query
+                .Take(20)
+                .Select(u => new { u.Id, u.FullName, u.Email, u.Role })
+                .ToListAsync();
+
+            return Ok(staff);
+        }
+
         private string HashPassword(string password)
         {
             using var sha256 = SHA256.Create();
@@ -96,7 +129,7 @@ namespace BusPulseLK.Controllers
                 new Claim("IsRegularPassenger", user.IsRegularPassenger.ToString())
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? "default_secret_key_for_development"));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(

@@ -1,4 +1,5 @@
-import React from 'react';
+// app/worker/dashboard.tsx
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,12 +9,67 @@ import {
   ScrollView,
   StatusBar,
   Alert,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
+import { busService } from '../../services/api';
 
-const EmployeeDashboard = () => {
+interface Bus {
+  id: number;
+  numberPlate: string;
+  name?: string;
+  busType: string;
+}
+
+interface TimetableEntry {
+  id: number;
+  departureTime: string;
+  operatingDays: string;
+  route: {
+    id: number;
+    name: string;
+    originTown: string;
+    destinationTown: string;
+  };
+}
+
+const StaffDashboard = () => {
   const { user, logout } = useAuth();
+  const [bus, setBus] = useState<Bus | null>(null);
+  const [routes, setRoutes] = useState<TimetableEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetchStaffData();
+  }, []);
+
+  const fetchStaffData = async () => {
+    try {
+      const data = await busService.getMine();
+      const buses = data as Bus[];
+      
+      if (buses.length > 0) {
+        setBus(buses[0]);
+        // Fetch routes for this bus
+        const routeData = await busService.getRoutes(buses[0].id);
+        setRoutes(routeData as TimetableEntry[]);
+      }
+    } catch (error: any) {
+      console.error('Staff fetch error:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchStaffData();
+  };
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -21,148 +77,116 @@ const EmployeeDashboard = () => {
       { text: 'Logout', style: 'destructive', onPress: () => logout() },
     ]);
   };
+
+  const startTrip = (timetable: TimetableEntry) => {
+    if (!bus) return;
+    router.push({
+      pathname: '/worker/trip-view',
+      params: { 
+        busId: bus.id, 
+        timetableId: timetable.id,
+        routeName: timetable.route.name,
+        departureTime: timetable.departureTime
+      }
+    });
+  };
+
   return (
     <>
       <StatusBar backgroundColor="#000000" barStyle="light-content" />
       <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6200" />
+          }
+        >
           {/* Header */}
           <View style={styles.header}>
             <View>
-              <Text style={styles.title}>Worker Dashboard</Text>
-              <Text style={styles.subtitle}>Welcome, {user?.fullName ?? 'Worker'}</Text>
+              <Text style={styles.title}>{user?.role} Dashboard</Text>
+              <Text style={styles.subtitle}>Welcome, {user?.fullName ?? 'Staff'}</Text>
             </View>
             <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
               <Ionicons name="log-out-outline" size={24} color="#FF6200" />
             </TouchableOpacity>
           </View>
 
-          {/* Current Bus Info */}
-          <View style={styles.busCard}>
-            <Text style={styles.busName}>Express 138</Text>
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>On Going</Text>
-            </View>
-            <View style={styles.routeInfo}>
-              <Ionicons name="location-outline" size={20} color="#FF6200" />
-              <Text style={styles.routeText}>Colombo → Kandy</Text>
-            </View>
-          </View>
+          {/* Bus Assignment Card */}
+          <View style={styles.content}>
+            {!bus && !loading ? (
+              <View style={styles.noBusCard}>
+                <Ionicons name="alert-circle-outline" size={48} color="#FF6200" />
+                <Text style={styles.noBusText}>No Bus Assigned</Text>
+                <Text style={styles.noBusSubtext}>Please contact your bus owner to assign you to a vehicle.</Text>
+              </View>
+            ) : (
+              bus && (
+                <View style={styles.busHero}>
+                  <View style={styles.busIconContainer}>
+                    <Ionicons name="bus" size={40} color="#FFFFFF" />
+                  </View>
+                  <View style={styles.busHeroInfo}>
+                    <Text style={styles.heroPlate}>{bus.numberPlate}</Text>
+                    <Text style={styles.heroName}>{bus.name || 'Unnamed Bus'}</Text>
+                    <View style={styles.heroBadge}>
+                      <Text style={styles.heroBadgeText}>{bus.busType}</Text>
+                    </View>
+                  </View>
+                </View>
+              )
+            )}
 
-          {/* Action Buttons Grid */}
-          <View style={styles.grid}>
-            <TouchableOpacity style={styles.actionCard}>
-              <Ionicons name="play-circle-outline" size={40} color="#FF6200" />
-              <Text style={styles.actionText}>Start Trip</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.actionCard}>
-              <Ionicons name="checkmark-circle-outline" size={40} color="#FF6200" />
-              <Text style={styles.actionText}>Mark Town Passed</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.actionCard}>
-              <Ionicons name="chatbox-ellipses-outline" size={40} color="#FF6200" />
-              <Text style={styles.actionText}>Post Update</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.actionCard}>
-              <Ionicons name="people-outline" size={40} color="#FF6200" />
-              <Text style={styles.actionText}>Approve Passengers</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Quick Updates */}
-          <Text style={styles.sectionTitle}>Quick Updates</Text>
-          <View style={styles.quickUpdates}>
-            <TouchableOpacity style={[styles.updatePill, styles.delayed]}>
-              <Text style={styles.pillText}>Bus Delayed</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.updatePill, styles.cancelled]}>
-              <Text style={styles.pillText}>Service Cancelled</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.updatePill, styles.started]}>
-              <Text style={styles.pillText}>Bus Trip Started</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Route Progress */}
-          <Text style={styles.sectionTitle}>Route Progress</Text>
-          <View style={styles.timeline}>
-            <View style={styles.timelineItem}>
-              <View style={styles.timelineDot} />
-              <View style={styles.timelineLine} />
-              <Text style={styles.timelineTime}>06:30 AM</Text>
-              <Text style={styles.timelineLocation}>Colombo</Text>
+            {/* Action Grid */}
+            <View style={styles.grid}>
+              <TouchableOpacity style={styles.card}>
+                <Ionicons name="play-outline" size={40} color="#FF6200" />
+                <Text style={styles.cardText}>Start Trip</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.card}>
+                <Ionicons name="calendar-outline" size={40} color="#FF6200" />
+                <Text style={styles.cardText}>Schedule</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.card}>
+                <Ionicons name="megaphone-outline" size={40} color="#FF6200" />
+                <Text style={styles.cardText}>Announce</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.card}>
+                <Ionicons name="chatbubbles-outline" size={40} color="#FF6200" />
+                <Text style={styles.cardText}>Support</Text>
+              </TouchableOpacity>
             </View>
 
-            <View style={styles.timelineItem}>
-              <View style={styles.timelineDot} />
-              <View style={styles.timelineLine} />
-              <Text style={styles.timelineTime}>06:50 AM</Text>
-              <Text style={styles.timelineLocation}>Kadawatha</Text>
-            </View>
-
-            <View style={styles.timelineItem}>
-              <View style={styles.timelineDot} />
-              <View style={styles.timelineLine} />
-              <Text style={styles.timelineTime}>07:05 AM</Text>
-              <Text style={styles.timelineLocation}>Kiribathgoda</Text>
-            </View>
-
-            <View style={styles.timelineItem}>
-              <View style={[styles.timelineDot, styles.currentDot]} />
-              <View style={styles.timelineLine} />
-              <Text style={[styles.timelineTime, styles.currentTime]}>Current Location</Text>
-              <Text style={[styles.timelineLocation, styles.currentLocation]}>Kegalle</Text>
-            </View>
-
-            <View style={styles.timelineItem}>
-              <View style={styles.timelineDot} />
-              <View style={styles.timelineLine} />
-              <Text style={styles.timelineTime}>10:45 AM</Text>
-              <Text style={styles.timelineLocation}>Mawanella (ETA)</Text>
-            </View>
-
-            <View style={styles.timelineItem}>
-              <View style={styles.timelineDot} />
-              <View style={styles.timelineLine} />
-              <Text style={styles.timelineTime}>11:10 AM</Text>
-              <Text style={styles.timelineLocation}>Ampebussa (ETA)</Text>
-            </View>
-
-            <View style={styles.timelineItem}>
-              <View style={styles.timelineDot} />
-              <Text style={styles.timelineTime}>11:45 AM</Text>
-              <Text style={styles.timelineLocation}>Kandy (ETA)</Text>
-            </View>
+            {/* Assigned Routes Section */}
+            <Text style={styles.sectionTitle}>Assigned Routes</Text>
+            {loading ? (
+              <ActivityIndicator color="#FF6200" style={{ marginTop: 20 }} />
+            ) : routes.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>No routes assigned to your bus.</Text>
+              </View>
+            ) : (
+              routes.map((route) => (
+                <TouchableOpacity 
+                  key={route.id} 
+                  style={styles.routeItem}
+                  onPress={() => startTrip(route)}
+                >
+                  <View style={styles.routeMain}>
+                    <Text style={styles.routeTitle}>{route.route.name}</Text>
+                    <Text style={styles.routeDetails}>{route.route.originTown} → {route.route.destinationTown}</Text>
+                  </View>
+                  <View style={styles.routeSide}>
+                    <View style={styles.timeBadge}>
+                      <Text style={styles.timeBadgeText}>{route.departureTime}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="#FF6200" />
+                  </View>
+                </TouchableOpacity>
+              ))
+            )}
           </View>
         </ScrollView>
-
-        {/* Bottom Tab Bar - Home active */}
-        <View style={styles.bottomTab}>
-          <TouchableOpacity style={styles.tabItem}>
-            <Ionicons name="home" size={28} color="#FF6200" />
-            <Text style={[styles.tabLabel, { color: '#FF6200' }]}>Home</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.tabItem}>
-            <Ionicons name="git-network-outline" size={28} color="#AAAAAA" />
-            <Text style={styles.tabLabel}>Route</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.tabItem}>
-            <Ionicons name="chatbox-ellipses-outline" size={28} color="#AAAAAA" />
-            <Text style={styles.tabLabel}>Updates</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.tabItem}>
-            <Ionicons name="person-outline" size={28} color="#AAAAAA" />
-            <Text style={styles.tabLabel}>Profile</Text>
-          </TouchableOpacity>
-        </View>
       </SafeAreaView>
     </>
   );
@@ -174,7 +198,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
@@ -182,7 +206,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 40,
-    paddingBottom: 20,
+    paddingBottom: 24,
   },
   title: {
     fontSize: 26,
@@ -190,67 +214,100 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#AAAAAA',
-    marginTop: 2,
+    marginTop: 4,
   },
   logoutBtn: {
     padding: 8,
   },
-  busCard: {
+  content: {
+    paddingHorizontal: 20,
+  },
+  noBusCard: {
     backgroundColor: '#111111',
-    borderRadius: 16,
-    marginHorizontal: 20,
-    padding: 20,
-    marginBottom: 24,
-  },
-  busName: {
-    color: '#FF6200',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  statusBadge: {
-    backgroundColor: '#2E7D32',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
     borderRadius: 20,
-    marginBottom: 12,
+    padding: 30,
+    alignItems: 'center',
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#222',
   },
-  statusText: {
+  noBusText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 16,
   },
-  routeInfo: {
+  noBusSubtext: {
+    color: '#666',
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  busHero: {
+    backgroundColor: '#FF6200',
+    borderRadius: 20,
+    padding: 24,
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 24,
   },
-  routeText: {
-    color: '#AAAAAA',
-    fontSize: 16,
-    marginLeft: 8,
+  busIconContainer: {
+    width: 64,
+    height: 64,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 20,
+  },
+  busHeroInfo: {
+    flex: 1,
+  },
+  heroPlate: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  heroName: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  heroBadge: {
+    backgroundColor: '#000000',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  heroBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginBottom: 32,
+    marginBottom: 24,
   },
-  actionCard: {
+  card: {
     width: '48%',
     backgroundColor: '#111111',
     borderRadius: 16,
-    paddingVertical: 28,
+    paddingVertical: 24,
     paddingHorizontal: 16,
     alignItems: 'center',
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#222',
   },
-  actionText: {
+  cardText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     marginTop: 12,
     textAlign: 'center',
@@ -259,102 +316,56 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 20,
     fontWeight: 'bold',
-    paddingHorizontal: 20,
     marginBottom: 16,
   },
-  quickUpdates: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginBottom: 32,
-  },
-  updatePill: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginBottom: 12,
-  },
-  delayed: {
-    backgroundColor: '#F57C00',
-  },
-  cancelled: {
-    backgroundColor: '#D32F2F',
-  },
-  started: {
-    backgroundColor: '#2E7D32',
-  },
-  pillText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  timeline: {
-    paddingHorizontal: 20,
-  },
-  timelineItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 24,
-  },
-  timelineDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#444444',
-    marginTop: 4,
-    marginRight: 16,
-  },
-  currentDot: {
-    backgroundColor: '#FF6200',
-  },
-  timelineLine: {
-    position: 'absolute',
-    left: 7,
-    top: 20,
-    bottom: -24,
-    width: 2,
-    backgroundColor: '#444444',
-  },
-  timelineTime: {
-    color: '#AAAAAA',
-    fontSize: 14,
-    width: 80,
-  },
-  currentTime: {
-    color: '#FF6200',
-    fontWeight: '600',
-  },
-  timelineLocation: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    flex: 1,
-  },
-  currentLocation: {
-    color: '#FF6200',
-    fontWeight: 'bold',
-  },
-  bottomTab: {
-    flexDirection: 'row',
-    backgroundColor: '#000000',
-    borderTopWidth: 1,
-    borderTopColor: '#222222',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    justifyContent: 'space-around',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  tabItem: {
+  emptyState: {
+    backgroundColor: '#111111',
+    borderRadius: 16,
+    padding: 24,
     alignItems: 'center',
   },
-  tabLabel: {
-    color: '#AAAAAA',
-    fontSize: 12,
+  emptyText: {
+    color: '#555',
+    fontSize: 15,
+  },
+  routeItem: {
+    flexDirection: 'row',
+    backgroundColor: '#111111',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#222',
+    alignItems: 'center',
+  },
+  routeMain: {
+    flex: 1,
+  },
+  routeTitle: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: 'bold',
+  },
+  routeDetails: {
+    color: '#666',
+    fontSize: 13,
     marginTop: 4,
+  },
+  routeSide: {
+    alignItems: 'flex-end',
+  },
+  timeBadge: {
+    backgroundColor: '#FF620022',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  timeBadgeText: {
+    color: '#FF6200',
+    fontSize: 13,
+    fontWeight: 'bold',
   },
 });
 
-export default EmployeeDashboard;
+export default StaffDashboard;

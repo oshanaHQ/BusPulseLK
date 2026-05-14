@@ -5,20 +5,23 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using BusPulseLK.Models;
 using System.Security.Cryptography;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 
 // Add CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", builder =>
     {
-        builder.AllowAnyOrigin()
+        builder.SetIsOriginAllowed(_ => true) // Allow any origin with credentials
                .AllowAnyMethod()
-               .AllowAnyHeader();
+               .AllowAnyHeader()
+               .AllowCredentials();
     });
 });
 
@@ -38,7 +41,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "default_secret_key_for_development")),
+            RoleClaimType = ClaimTypes.Role,
+            NameClaimType = ClaimTypes.NameIdentifier
         };
     });
 
@@ -63,6 +68,7 @@ app.UseAuthentication();  // Add this
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<BusPulseLK.Hubs.BusHub>("/hubs/bus");
 
 // ── Seed Admin User ────────────────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())

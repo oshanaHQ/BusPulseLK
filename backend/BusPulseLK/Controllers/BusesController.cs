@@ -72,17 +72,37 @@ namespace BusPulseLK.Controllers
         // BusOwner: get their own buses
         // ────────────────────────────────────────────────────────────────────
         [HttpGet("mine")]
-        [Authorize(Roles = "BusOwner")]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<BusResponseDto>>> GetMine()
         {
-            var ownerId = GetCurrentUserId();
-            if (ownerId == null) return Unauthorized();
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
 
-            var buses = await _context.Buses
+            var query = _context.Buses
                 .Include(b => b.Owner)
                 .Include(b => b.Driver)
                 .Include(b => b.Conductor)
-                .Where(b => b.OwnerId == ownerId.Value)
+                .AsQueryable();
+
+            if (User.IsInRole("BusOwner"))
+            {
+                query = query.Where(b => b.OwnerId == userId.Value);
+            }
+            else if (User.IsInRole("Driver"))
+            {
+                query = query.Where(b => b.DriverId == userId.Value);
+            }
+            else if (User.IsInRole("Conductor"))
+            {
+                query = query.Where(b => b.ConductorId == userId.Value);
+            }
+            else if (!User.IsInRole("Admin"))
+            {
+                // If not even an admin and no recognized role, return empty
+                return Ok(new List<BusResponseDto>());
+            }
+
+            var buses = await query
                 .OrderBy(b => b.NumberPlate)
                 .Select(b => MapToDto(b))
                 .ToListAsync();
@@ -269,6 +289,11 @@ namespace BusPulseLK.Controllers
             if (driver == null || driver.Role != "Driver")
                 return BadRequest(new { message = "User not found or is not registered as a Driver." });
 
+            // Ensure driver is not already assigned to another active bus
+            var existingBus = await _context.Buses.AnyAsync(b => b.DriverId == dto.UserId && b.Id != id && b.IsActive);
+            if (existingBus)
+                return Conflict(new { message = "This driver is already assigned to another bus." });
+
             bus.DriverId = dto.UserId;
             await _context.SaveChangesAsync();
             await LoadBusNavigations(bus);
@@ -320,6 +345,11 @@ namespace BusPulseLK.Controllers
             var conductor = await _context.Users.FindAsync(dto.UserId);
             if (conductor == null || conductor.Role != "Conductor")
                 return BadRequest(new { message = "User not found or is not registered as a Conductor." });
+
+            // Ensure conductor is not already assigned to another active bus
+            var existingBus = await _context.Buses.AnyAsync(b => b.ConductorId == dto.UserId && b.Id != id && b.IsActive);
+            if (existingBus)
+                return Conflict(new { message = "This conductor is already assigned to another bus." });
 
             bus.ConductorId = dto.UserId;
             await _context.SaveChangesAsync();

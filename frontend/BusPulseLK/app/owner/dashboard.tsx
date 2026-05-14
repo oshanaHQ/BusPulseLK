@@ -98,7 +98,10 @@ const BusOwnerDashboard = () => {
               <Text style={styles.cardText}>Manage Routes</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.card}>
+            <TouchableOpacity 
+              style={styles.card}
+              onPress={() => router.push('./manage-staff')}
+            >
               <Ionicons name="people-outline" size={40} color="#FF6200" />
               <Text style={styles.cardText}>Manage Staff</Text>
             </TouchableOpacity>
