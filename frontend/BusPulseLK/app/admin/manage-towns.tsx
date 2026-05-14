@@ -4,7 +4,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   TouchableOpacity,
   Modal,
@@ -13,6 +12,7 @@ import {
   Alert,
   StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { townService } from '../../services/api';
@@ -24,11 +24,13 @@ interface Town {
 }
 
 const ManageTowns = () => {
+  const insets = useSafeAreaInsets();
   const [towns, setTowns] = useState<Town[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [townName, setTownName] = useState('');
   const [townDesc, setTownDesc] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchTowns();
@@ -45,6 +47,10 @@ const ManageTowns = () => {
       setLoading(false);
     }
   };
+
+  const filteredTowns = towns.filter(t => 
+    t.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleAddTown = async () => {
     if (!townName.trim()) {
@@ -104,7 +110,7 @@ const ManageTowns = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" />
       
       <View style={styles.header}>
@@ -117,18 +123,35 @@ const ManageTowns = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#555" style={styles.searchIcon} />
+        <TextInput 
+          style={styles.searchInput}
+          placeholder="Search cities..."
+          placeholderTextColor="#555"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Ionicons name="close-circle" size={20} color="#555" />
+          </TouchableOpacity>
+        )}
+      </View>
+
       {loading && !modalVisible ? (
         <View style={styles.center}><ActivityIndicator color="#FF6200" /></View>
       ) : (
         <FlatList
-          data={towns}
+          data={filteredTowns}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderTownItem}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
           ListEmptyComponent={
             <View style={styles.empty}>
               <Ionicons name="map-outline" size={60} color="#222" />
-              <Text style={styles.emptyText}>No cities added yet</Text>
+              <Text style={styles.emptyText}>{searchQuery ? 'No matching cities' : 'No cities added yet'}</Text>
             </View>
           }
         />
@@ -171,16 +194,30 @@ const ManageTowns = () => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 20, justifyContent: 'space-between' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 10, justifyContent: 'space-between' },
   backBtn: { padding: 5 },
   title: { color: '#FFF', fontSize: 22, fontWeight: 'bold' },
   addBtn: { padding: 5 },
+  searchContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: '#111', 
+    marginHorizontal: 20, 
+    marginVertical: 10, 
+    borderRadius: 12, 
+    paddingHorizontal: 15, 
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#222'
+  },
+  searchIcon: { marginRight: 10 },
+  searchInput: { flex: 1, color: '#FFF', fontSize: 16 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   listContent: { padding: 20 },
   townCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#111', padding: 15, borderRadius: 16, marginBottom: 12 },

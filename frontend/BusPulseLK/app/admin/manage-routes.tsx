@@ -4,7 +4,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   TouchableOpacity,
   Modal,
@@ -14,6 +13,7 @@ import {
   Alert,
   StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { routeService, townService } from '../../services/api';
@@ -40,6 +40,7 @@ interface Route {
 }
 
 const ManageRoutes = () => {
+  const insets = useSafeAreaInsets();
   const [routes, setRoutes] = useState<Route[]>([]);
   const [towns, setTowns] = useState<Town[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +52,10 @@ const ManageRoutes = () => {
   const [routeNumber, setRouteNumber] = useState('');
   const [selectedTownIds, setSelectedTownIds] = useState<number[]>([]);
   const [showTownPicker, setShowTownPicker] = useState(false);
+  const [pickerSearchQuery, setPickerSearchQuery] = useState('');
+  const filteredPickerTowns = towns.filter(t => 
+    t.name.toLowerCase().includes(pickerSearchQuery.toLowerCase())
+  );
 
   useEffect(() => {
     fetchData();
@@ -184,7 +189,7 @@ const ManageRoutes = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" />
 
       {/* Header */}
@@ -207,7 +212,7 @@ const ManageRoutes = () => {
           data={routes}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderRouteItem}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Ionicons name="map-outline" size={64} color="#333" />
@@ -300,25 +305,49 @@ const ManageRoutes = () => {
           animationType="fade"
         >
           <View style={styles.pickerOverlay}>
-            <View style={styles.pickerContent}>
+            <View style={[styles.pickerContent, { paddingBottom: 20 }]}>
               <Text style={styles.pickerTitle}>Select City</Text>
+              
+              <View style={styles.pickerSearchBox}>
+                <Ionicons name="search" size={18} color="#555" />
+                <TextInput 
+                  style={styles.pickerSearchInput}
+                  placeholder="Filter cities..."
+                  placeholderTextColor="#555"
+                  value={pickerSearchQuery}
+                  onChangeText={setPickerSearchQuery}
+                  autoFocus={true}
+                />
+              </View>
+
               <FlatList
-                data={towns}
+                data={filteredPickerTowns}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     style={styles.pickerItem}
-                    onPress={() => handleAddTown(item.id)}
+                    onPress={() => {
+                      handleAddTown(item.id);
+                      setPickerSearchQuery('');
+                    }}
                   >
                     <Text style={styles.pickerItemText}>{item.name}</Text>
                     <Ionicons name="chevron-forward" size={18} color="#FF6200" />
                   </TouchableOpacity>
                 )}
                 ItemSeparatorComponent={() => <View style={styles.separator} />}
+                ListEmptyComponent={
+                  <Text style={{ color: '#444', textAlign: 'center', marginVertical: 20 }}>
+                    No cities match your search
+                  </Text>
+                }
               />
               <TouchableOpacity
                 style={styles.closePickerBtn}
-                onPress={() => setShowTownPicker(false)}
+                onPress={() => {
+                  setShowTownPicker(false);
+                  setPickerSearchQuery('');
+                }}
               >
                 <Text style={styles.closePickerText}>Cancel</Text>
               </TouchableOpacity>
@@ -326,7 +355,7 @@ const ManageRoutes = () => {
           </View>
         </Modal>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -345,7 +374,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingTop: 10,
     paddingBottom: 16,
     backgroundColor: '#000000',
   },
@@ -564,6 +593,23 @@ const styles = StyleSheet.create({
     color: '#AAAAAA',
     fontSize: 16,
   },
+  pickerSearchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#000',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 40,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#333'
+  },
+  pickerSearchInput: {
+    flex: 1,
+    color: '#FFF',
+    fontSize: 14,
+    marginLeft: 8
+  }
 });
 
 export default ManageRoutes;
