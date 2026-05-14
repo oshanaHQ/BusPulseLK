@@ -148,10 +148,9 @@ namespace BusPulseLK.Data
             modelBuilder.Entity<Trip>()
                 .ToTable("trips");
 
-            // A timetable entry should only have one trip per date
+            // A timetable entry can have multiple trips per date (e.g. forward and return)
             modelBuilder.Entity<Trip>()
-                .HasIndex(t => new { t.TimetableId, t.TripDate })
-                .IsUnique();
+                .HasIndex(t => new { t.TimetableId, t.TripDate });
 
             modelBuilder.Entity<Trip>()
                 .HasOne(t => t.Timetable)

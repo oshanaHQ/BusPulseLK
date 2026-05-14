@@ -34,6 +34,7 @@ const TripView = () => {
   const [currentStopIndex, setCurrentStopIndex] = useState(-1);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [isReversed, setIsReversed] = useState(false);
   
   const connectionRef = useRef<signalR.HubConnection | null>(null);
 
@@ -47,22 +48,36 @@ const TripView = () => {
     };
   }, []);
 
-  const initTrip = async () => {
+  const initTrip = async (reverse: boolean = false) => {
     try {
       setLoading(true);
-      // 1. Start/Get the trip
+      // 1. Start/Get the trip (Server returns existing trip if active)
       const tripData: any = await tripService.start(Number(timetableId));
       setTripId(tripData.id);
 
-      // 2. Get route stops (assuming we have an endpoint for this or can derive it)
-      // For now, we'll fetch the route details which should include stops
-      // Note: We need the routeId. We can get it from the timetable if needed, 
-      // but for now I'll assume we have a way to get stops for a timetable's route.
-      const routeData: any = await routeService.getAll(); // Simplified search
+      // 2. Get route stops
+      const routeData: any = await routeService.getAll();
       const route = routeData.find((r: any) => r.name === routeName);
+      
       if (route) {
         const stopsData = await routeService.getStops(route.id);
-        setStops(stopsData as Stop[]);
+        let stopsList = stopsData as Stop[];
+        
+        if (reverse) {
+          stopsList = [...stopsList].reverse();
+        }
+        
+        setStops(stopsList);
+
+        // 3. Recovery: Find where we were (only if status is Started)
+        if (tripData.status === 'Started' && tripData.lastPassedTownId) {
+          const index = stopsList.findIndex(s => s.town.id === tripData.lastPassedTownId);
+          if (index !== -1) {
+            setCurrentStopIndex(index);
+          }
+        } else {
+          setCurrentStopIndex(-1);
+        }
       }
     } catch (error: any) {
       Alert.alert('Error', error.message);
@@ -118,6 +133,48 @@ const TripView = () => {
     }
   };
 
+  const handleEndTrip = async () => {
+    if (!tripId) return;
+
+    Alert.alert(
+      'End Trip',
+      'Are you sure you want to end this trip?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'End Trip', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setUpdating(true);
+              await tripService.end(tripId);
+              
+              Alert.alert(
+                'Trip Completed',
+                'Do you want to start the return journey?',
+                [
+                  { text: 'No, Exit', onPress: () => router.back() },
+                  { 
+                    text: 'Yes, Start Return', 
+                    onPress: () => {
+                      const nextReverse = !isReversed;
+                      setIsReversed(nextReverse);
+                      initTrip(nextReverse);
+                    }
+                  }
+                ]
+              );
+            } catch (error: any) {
+              Alert.alert('Error', error.message);
+            } finally {
+              setUpdating(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <View style={[styles.container, styles.center]}>
@@ -137,7 +194,9 @@ const TripView = () => {
         </TouchableOpacity>
         <View style={styles.headerInfo}>
           <Text style={styles.routeName}>{routeName}</Text>
-          <Text style={styles.tripStatus}>LIVE TRIP • {departureTime}</Text>
+          <Text style={styles.tripStatus}>
+            {isReversed ? 'RETURN TRIP' : 'FORWARD TRIP'} • {departureTime}
+          </Text>
         </View>
         <View style={styles.liveBadge}>
           <View style={styles.dot} />
@@ -146,14 +205,23 @@ const TripView = () => {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.sectionTitle}>Route Progress</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Route Progress</Text>
+          {isReversed && (
+            <View style={styles.reverseBadge}>
+              <Ionicons name="swap-vertical" size={12} color="#FF6200" />
+              <Text style={styles.reverseText}>REVERSED</Text>
+            </View>
+          )}
+        </View>
+
         <View style={styles.timeline}>
           {stops.map((stop, index) => {
             const isPassed = index <= currentStopIndex;
             const isNext = index === currentStopIndex + 1;
             
             return (
-              <View key={stop.id} style={styles.timelineItem}>
+              <View key={`${stop.id}-${index}`} style={styles.timelineItem}>
                 <View style={styles.leftCol}>
                   <View style={[
                     styles.circle, 
@@ -205,8 +273,16 @@ const TripView = () => {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.endTripBtn} onPress={() => router.back()}>
-          <Text style={styles.endTripText}>End Trip</Text>
+        <TouchableOpacity 
+          style={styles.endTripBtn} 
+          onPress={handleEndTrip}
+          disabled={updating}
+        >
+          {updating ? (
+            <ActivityIndicator color="#D32F2F" />
+          ) : (
+            <Text style={styles.endTripText}>End Current Trip</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -248,6 +324,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     marginTop: 2,
+    textTransform: 'uppercase',
   },
   liveBadge: {
     flexDirection: 'row',
@@ -272,13 +349,32 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
   sectionTitle: {
     color: '#666',
     fontSize: 14,
     fontWeight: 'bold',
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: 24,
+  },
+  reverseBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF620011',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    gap: 4,
+  },
+  reverseText: {
+    color: '#FF6200',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   timeline: {
     paddingLeft: 10,

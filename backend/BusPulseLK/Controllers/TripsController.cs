@@ -59,7 +59,11 @@ namespace BusPulseLK.Controllers
             _context.Trips.Add(trip);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetById), new { id = trip.Id }, MapToDto(trip));
+            // Reload to ensure all properties are fresh
+            var savedTrip = await _context.Trips
+                .FirstOrDefaultAsync(t => t.Id == trip.Id);
+
+            return StatusCode(201, MapToDto(savedTrip!));
         }
 
         [HttpGet("{id}")]
@@ -122,6 +126,26 @@ namespace BusPulseLK.Controllers
             return Ok(new { message = "Progress updated." });
         }
 
+        [HttpPost("{id}/end")]
+        [Authorize]
+        public async Task<IActionResult> EndTrip(int id)
+        {
+            var userId = GetCurrentUserId();
+            var trip = await _context.Trips
+                .Include(t => t.Timetable).ThenInclude(tt => tt.Bus)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (trip == null) return NotFound();
+
+            if (trip.Timetable.Bus.DriverId != userId && trip.Timetable.Bus.ConductorId != userId)
+                return Forbid();
+
+            trip.Status = "Completed";
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Trip completed." });
+        }
+
         private int? GetCurrentUserId()
         {
             var claim = User.FindFirst(ClaimTypes.NameIdentifier);
@@ -134,6 +158,7 @@ namespace BusPulseLK.Controllers
             Status = t.Status,
             TripDate = t.TripDate.ToString("yyyy-MM-dd"),
             TimetableId = t.TimetableId,
+            LastPassedTownId = t.LastPassedTownId,
             IsActive = t.Status != "Completed" && t.Status != "Cancelled"
         };
     }
@@ -154,6 +179,7 @@ namespace BusPulseLK.Controllers
         public string Status { get; set; }
         public string TripDate { get; set; }
         public int TimetableId { get; set; }
+        public int? LastPassedTownId { get; set; }
         public bool IsActive { get; set; }
     }
 }

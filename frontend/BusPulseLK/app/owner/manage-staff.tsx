@@ -38,7 +38,7 @@ const ManageStaff = () => {
   const [searchModalVisible, setSearchModalVisible] = useState(false);
   const [selectedBusId, setSelectedBusId] = useState<number | null>(null);
   const [selectedRole, setSelectedRole] = useState<'Driver' | 'Conductor'>('Driver');
-  
+
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<StaffUser[]>([]);
@@ -95,9 +95,9 @@ const ManageStaff = () => {
   const handleUnassign = (busId: number, role: 'Driver' | 'Conductor') => {
     Alert.alert('Confirm', `Unassign this ${role.toLowerCase()}?`, [
       { text: 'Cancel', style: 'cancel' },
-      { 
-        text: 'Unassign', 
-        style: 'destructive', 
+      {
+        text: 'Unassign',
+        style: 'destructive',
         onPress: async () => {
           try {
             if (role === 'Driver') {
@@ -109,7 +109,7 @@ const ManageStaff = () => {
           } catch (error: any) {
             Alert.alert('Error', error.message);
           }
-        } 
+        }
       },
     ]);
   };
@@ -126,9 +126,9 @@ const ManageStaff = () => {
     <View style={styles.busCard}>
       <Text style={styles.busPlate}>{item.numberPlate}</Text>
       <Text style={styles.busName}>{item.name || 'Unnamed Bus'}</Text>
-      
+
       <View style={styles.divider} />
-      
+
       {/* Driver Section */}
       <View style={styles.staffSection}>
         <View style={styles.staffHeader}>
@@ -168,7 +168,7 @@ const ManageStaff = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
-      
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color="#FFFFFF" />

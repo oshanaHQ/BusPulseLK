@@ -221,6 +221,7 @@ export const timetableService = {
 export const tripService = {
   start: (timetableId: number) => apiPost('/trips/start', { timetableId }),
   updateProgress: (tripId: number, townId: number) => apiPost(`/trips/${tripId}/progress`, { townId }),
+  end: (tripId: number) => apiPost(`/trips/${tripId}/end`, {}),
   getById: (id: number) => apiGet(`/trips/${id}`),
 };
 
