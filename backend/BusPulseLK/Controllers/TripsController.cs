@@ -46,13 +46,21 @@ namespace BusPulseLK.Controllers
                 .FirstOrDefaultAsync(t => t.TimetableId == dto.TimetableId && t.TripDate == today && t.Status != "Completed" && t.Status != "Cancelled");
 
             if (existingTrip != null)
+            {
+                if (existingTrip.TrackingMode != dto.TrackingMode)
+                {
+                    existingTrip.TrackingMode = dto.TrackingMode;
+                    await _context.SaveChangesAsync();
+                }
                 return Ok(MapToDto(existingTrip));
+            }
 
             var trip = new Trip
             {
                 TimetableId = dto.TimetableId,
                 TripDate = today,
                 Status = "Started",
+                TrackingMode = dto.TrackingMode,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -117,7 +125,39 @@ namespace BusPulseLK.Controllers
                 }
             }
 
+            dto.CurrentLatitude = trip.CurrentLatitude;
+            dto.CurrentLongitude = trip.CurrentLongitude;
+            dto.TrackingMode = trip.TrackingMode;
+
             return Ok(dto);
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // POST api/trips/{id}/location
+        // Update current GPS coordinates (Automatic mode)
+        // ────────────────────────────────────────────────────────────────────
+        [HttpPost("{id}/location")]
+        [Authorize]
+        public async Task<IActionResult> UpdateLocation(int id, [FromBody] UpdateLocationDto dto)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+
+            var trip = await _context.Trips
+                .Include(t => t.Timetable).ThenInclude(tt => tt.Bus)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (trip == null) return NotFound();
+
+            if (trip.Timetable.Bus.DriverId != userId && trip.Timetable.Bus.ConductorId != userId)
+                return Forbid();
+
+            trip.CurrentLatitude = dto.Latitude;
+            trip.CurrentLongitude = dto.Longitude;
+            
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Location updated." });
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -199,6 +239,9 @@ namespace BusPulseLK.Controllers
             TripDate = t.TripDate.ToString("yyyy-MM-dd"),
             TimetableId = t.TimetableId,
             LastPassedTownId = t.LastPassedTownId,
+            TrackingMode = t.TrackingMode,
+            CurrentLatitude = t.CurrentLatitude,
+            CurrentLongitude = t.CurrentLongitude,
             IsActive = t.Status != "Completed" && t.Status != "Cancelled"
         };
     }
@@ -206,6 +249,13 @@ namespace BusPulseLK.Controllers
     public class StartTripDto
     {
         public int TimetableId { get; set; }
+        public string TrackingMode { get; set; } = "Manual";
+    }
+
+    public class UpdateLocationDto
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
     }
 
     public class UpdateProgressDto
@@ -223,6 +273,9 @@ namespace BusPulseLK.Controllers
         public string? LastPassedTownName { get; set; }
         public string? NextTownName { get; set; }
         public double ProgressPercent { get; set; }
+        public string TrackingMode { get; set; } = "Manual";
+        public double? CurrentLatitude { get; set; }
+        public double? CurrentLongitude { get; set; }
         public bool IsActive { get; set; }
     }
 }

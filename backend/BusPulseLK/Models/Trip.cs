@@ -29,6 +29,12 @@ namespace BusPulseLK.Models
         public string Status { get; set; } = "Scheduled";
 
         /// <summary>
+        /// "Manual" | "Automatic"
+        /// </summary>
+        [StringLength(20)]
+        public string TrackingMode { get; set; } = "Manual";
+
+        /// <summary>
         /// Optional free-text reason for a delay or cancellation.
         /// </summary>
         [StringLength(300)]
@@ -38,6 +44,10 @@ namespace BusPulseLK.Models
         /// <summary>The most-recently confirmed passed town for this trip.</summary>
         public int? LastPassedTownId { get; set; }
         public Town? LastPassedTown { get; set; }
+
+        /// <summary>Live GPS coordinates (for Automatic mode)</summary>
+        public double? CurrentLatitude { get; set; }
+        public double? CurrentLongitude { get; set; }
 
         // ── Meta ─────────────────────────────────────────────────────────────
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
