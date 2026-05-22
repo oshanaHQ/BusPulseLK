@@ -125,46 +125,59 @@ const LiveTrackingScreen = () => {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Status Card */}
-        <View style={styles.statusCard}>
-          <View style={styles.busIconContainer}>
-            <Ionicons name="bus" size={40} color="#FF6200" />
-          </View>
-          <Text style={styles.statusLabel}>Current Location</Text>
-          <Text style={styles.locationName}>{status?.lastStopName || 'Waiting for update...'}</Text>
-          
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${status?.progressPercent || 0}%` }]} />
-            </View>
-            <View style={styles.progressLabels}>
-              <Text style={styles.progressText}>Progress</Text>
-              <Text style={styles.progressText}>{Math.round(status?.progressPercent || 0)}%</Text>
-            </View>
-          </View>
+        {/* Automatic Mode View */}
+        {status?.trackingMode === 'Automatic' && (
+          <>
+            {status?.latitude && status?.longitude ? (
+              <View style={styles.mapContainer}>
+                <FreeMap 
+                  latitude={status.latitude} 
+                  longitude={status.longitude} 
+                  zoom={15} 
+                />
+              </View>
+            ) : (
+              <View style={[styles.mapContainer, styles.mapFallback]}>
+                <Ionicons name="map-outline" size={48} color="#333" />
+                <Text style={styles.mapFallbackText}>Waiting for GPS signal...</Text>
+              </View>
+            )}
+          </>
+        )}
 
-          <View style={styles.nextStopBox}>
-            <Text style={styles.nextLabel}>Next Stop</Text>
-            <Text style={styles.nextValue}>{status?.nextStopName || '...'}</Text>
-          </View>
-        </View>
+        {/* Manual Mode View */}
+        {status?.trackingMode === 'Manual' && (
+          <View style={styles.statusCard}>
+            <View style={styles.busIconContainer}>
+              <Ionicons name="bus" size={40} color="#FF6200" />
+            </View>
+            <Text style={styles.statusLabel}>Current Location</Text>
+            <Text style={styles.locationName}>{status?.lastStopName || 'Starting Point'}</Text>
+            
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: `${status?.progressPercent || 0}%` }]} />
+              </View>
+              <View style={styles.progressLabels}>
+                <Text style={styles.progressText}>Progress</Text>
+                <Text style={styles.progressText}>{Math.round(status?.progressPercent || 0)}%</Text>
+              </View>
+            </View>
 
-        {/* Map View */}
-        {status?.latitude && status?.longitude ? (
-          <View style={styles.mapContainer}>
-            <FreeMap 
-              latitude={status.latitude} 
-              longitude={status.longitude} 
-              zoom={15} 
-            />
+            <View style={styles.nextStopBox}>
+              <Text style={styles.nextLabel}>Next Stop</Text>
+              <Text style={styles.nextValue}>{status?.nextStopName || '...'}</Text>
+            </View>
           </View>
-        ) : (
-          <View style={[styles.mapContainer, styles.mapFallback]}>
-            <Ionicons name="map-outline" size={48} color="#333" />
-            <Text style={styles.mapFallbackText}>
-              {status?.trackingMode === 'Manual' 
-                ? 'GPS Tracking disabled (Manual Mode)' 
-                : 'Waiting for GPS signal...'}
+        )}
+
+        {/* No Active Trip fallback */}
+        {!status && (
+          <View style={styles.statusCard}>
+            <Ionicons name="alert-circle-outline" size={48} color="#FF6200" />
+            <Text style={[styles.locationName, { marginTop: 15 }]}>No Active Trip</Text>
+            <Text style={{ color: '#666', marginTop: 5, textAlign: 'center', fontSize: 14 }}>
+              This bus is not currently running on any active schedule.
             </Text>
           </View>
         )}
