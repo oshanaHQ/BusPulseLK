@@ -280,3 +280,20 @@ export const routeRequestService = {
   reject: (id: number, statusReason: string) =>
     apiPost(`/routerequests/${id}/reject`, { statusReason }),
 };
+
+// ── Regular Passenger service ─────────────────────────────────────────────────
+
+export const regularPassengerService = {
+  // Worker
+  getMyBus: () => apiGet('/regularpassengers/my-bus'),
+  nominate: (passengerEmail: string) =>
+    apiPost('/regularpassengers/nominate', { passengerEmail }),
+  remove: (id: number) => apiDelete(`/regularpassengers/${id}`),
+  // Admin
+  getPending: (status?: string) =>
+    apiGet(`/regularpassengers/pending${status ? `?status=${status}` : ''}`),
+  approve: (id: number) => apiPost(`/regularpassengers/${id}/approve`, {}),
+  reject: (id: number) => apiPost(`/regularpassengers/${id}/reject`, {}),
+  // Passenger
+  getMyStatus: () => apiGet('/regularpassengers/my-status'),
+};

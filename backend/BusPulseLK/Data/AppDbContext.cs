@@ -306,6 +306,12 @@ namespace BusPulseLK.Data
                 .HasForeignKey(r => r.ReviewedByUserId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            modelBuilder.Entity<RegularPassengerRequest>()
+                .HasOne(r => r.NominatedByUser)
+                .WithMany()
+                .HasForeignKey(r => r.NominatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // ── RouteRequests ─────────────────────────────────────────────────
             modelBuilder.Entity<RouteRequest>()
                 .ToTable("route_requests");

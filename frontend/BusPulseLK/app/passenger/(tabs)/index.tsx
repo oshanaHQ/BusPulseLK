@@ -13,16 +13,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '../../../context/AuthContext';
-import { favoriteService } from '../../../services/api';
+import { favoriteService, regularPassengerService } from '../../../services/api';
 
 const PassengerDashboard = () => {
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
   const [favorites, setFavorites] = useState<any[]>([]);
+  const [regularBuses, setRegularBuses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadFavorites();
+    loadRegularBuses();
   }, []);
 
   const loadFavorites = async () => {
@@ -32,6 +34,13 @@ const PassengerDashboard = () => {
     } catch (error) {} finally {
       setLoading(false);
     }
+  };
+
+  const loadRegularBuses = async () => {
+    try {
+      const data = await regularPassengerService.getMyStatus();
+      setRegularBuses(data as any[]);
+    } catch (error) {}
   };
 
   const handleLogout = () => {
@@ -114,6 +123,33 @@ const PassengerDashboard = () => {
           </TouchableOpacity>
         </View>
 
+        {/* My Regular Bus */}
+        {regularBuses.length > 0 && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>My Regular Bus</Text>
+            </View>
+            {regularBuses.map((rb: any) => (
+              <TouchableOpacity
+                key={rb.requestId}
+                style={styles.regularBusCard}
+                onPress={() => router.push({ pathname: '/passenger/regular-bus-trip', params: { busId: rb.busId } })}
+              >
+                <View style={styles.regularBusIcon}>
+                  <Ionicons name="star" size={22} color="#FF6200" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.regularBusName}>{rb.busName || rb.busNumberPlate}</Text>
+                  <Text style={styles.regularBusPlate}>{rb.busNumberPlate} • {rb.busType}</Text>
+                </View>
+                <View style={styles.regularLiveBadge}>
+                  <Text style={styles.regularLiveText}>TRACK</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </>
+        )}
+
         {/* Live Tracking Section */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Live Tracking</Text>
@@ -195,7 +231,13 @@ const styles = StyleSheet.create({
   favName: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
   favPlate: { color: '#444', fontSize: 12, marginTop: 2 },
   emptyFav: { marginHorizontal: 25, padding: 20, backgroundColor: '#080808', borderRadius: 16, borderStyle: 'dashed', borderWidth: 1, borderColor: '#222', alignItems: 'center' },
-  emptyFavText: { color: '#444' }
+  emptyFavText: { color: '#444' },
+  regularBusCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0D0D0D', marginHorizontal: 20, padding: 16, borderRadius: 16, marginBottom: 10, borderWidth: 1, borderColor: '#FF620033' },
+  regularBusIcon: { width: 44, height: 44, backgroundColor: '#FF620022', borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 14 },
+  regularBusName: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  regularBusPlate: { color: '#666', fontSize: 12, marginTop: 2 },
+  regularLiveBadge: { backgroundColor: '#FF6200', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  regularLiveText: { color: '#FFF', fontSize: 11, fontWeight: 'bold' },
 });
 
 export default PassengerDashboard;

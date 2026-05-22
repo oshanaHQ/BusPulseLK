@@ -161,9 +161,12 @@ const StaffDashboard = () => {
               <Ionicons name="megaphone-outline" size={40} color="#FF6200" />
               <Text style={styles.cardText}>Announce</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.card}>
-              <Ionicons name="chatbubbles-outline" size={40} color="#FF6200" />
-              <Text style={styles.cardText}>Support</Text>
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => router.push('./regular-passengers')}
+            >
+              <Ionicons name="people-circle-outline" size={40} color="#FF6200" />
+              <Text style={styles.cardText}>Regular Passengers</Text>
             </TouchableOpacity>
           </View>
 

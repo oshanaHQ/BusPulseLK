@@ -55,6 +55,14 @@ const AdminDashboard = () => {
             <Text style={styles.cardText}>Route Requests</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => router.push('./regular-passengers')}
+          >
+            <Ionicons name="people-circle-outline" size={40} color="#FF6200" />
+            <Text style={styles.cardText}>Regular Passengers</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity 
             style={styles.card}
             onPress={() => router.push('./bus-approvals')}

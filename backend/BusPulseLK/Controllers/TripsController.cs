@@ -129,6 +129,13 @@ namespace BusPulseLK.Controllers
             dto.CurrentLongitude = trip.CurrentLongitude;
             dto.TrackingMode = trip.TrackingMode;
 
+            // Include stops for the UI to render the progress
+            dto.Stops = trip.Timetable.Route.Stops.OrderBy(s => s.StopOrder).Select(s => new
+            {
+                townId = s.TownId,
+                townName = s.Town.Name
+            }).ToList();
+
             return Ok(dto);
         }
 
@@ -177,18 +184,28 @@ namespace BusPulseLK.Controllers
 
             if (trip == null) return NotFound();
 
-            // Verify user assignment
-            if (trip.Timetable.Bus.DriverId != userId && trip.Timetable.Bus.ConductorId != userId)
+            var busId = trip.Timetable.BusId;
+            var bus = trip.Timetable.Bus;
+
+            // Allow: driver, conductor, OR an approved regular passenger of this bus
+            bool isWorker = bus.DriverId == userId || bus.ConductorId == userId;
+            bool isRegularPassenger = false;
+
+            if (!isWorker)
+            {
+                isRegularPassenger = await _context.RegularPassengerRequests
+                    .AnyAsync(r => r.PassengerId == userId && r.BusId == busId && r.Status == "Approved");
+            }
+
+            if (!isWorker && !isRegularPassenger)
                 return Forbid();
 
             // Check if already passed to avoid unique constraint violation
             var alreadyPassed = await _context.TownProgresses
                 .AnyAsync(p => p.TripId == id && p.TownId == dto.TownId);
-            
+
             if (alreadyPassed)
-            {
                 return Ok(new { message = "Town already marked as passed." });
-            }
 
             var progress = new TownProgress
             {
@@ -200,7 +217,7 @@ namespace BusPulseLK.Controllers
 
             _context.TownProgresses.Add(progress);
             trip.LastPassedTownId = dto.TownId;
-            
+
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Progress updated." });
@@ -277,5 +294,6 @@ namespace BusPulseLK.Controllers
         public double? CurrentLatitude { get; set; }
         public double? CurrentLongitude { get; set; }
         public bool IsActive { get; set; }
+        public object? Stops { get; set; }
     }
 }

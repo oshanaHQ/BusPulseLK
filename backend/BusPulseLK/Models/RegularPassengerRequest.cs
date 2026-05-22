@@ -28,7 +28,11 @@ namespace BusPulseLK.Models
         public string Status { get; set; } = "Pending";
 
         // ── Approver ─────────────────────────────────────────────────────────
-        /// <summary>Driver or Conductor who processed this request.</summary>
+        /// <summary>Worker (Driver/Conductor) who nominated this passenger.</summary>
+        public int? NominatedByUserId { get; set; }
+        public User? NominatedByUser { get; set; }
+
+        /// <summary>Admin who approved or rejected this request.</summary>
         public int? ReviewedByUserId { get; set; }
         public User? ReviewedBy { get; set; }
 
