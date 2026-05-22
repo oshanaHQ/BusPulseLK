@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as signalR from '@microsoft/signalr';
 import { tripService, ratingService, reportService, API_BASE_URL } from '../../services/api';
+import FreeMap from '../../components/FreeMap';
 
 const LiveTrackingScreen = () => {
   const { busId, timetableId } = useLocalSearchParams();
@@ -52,6 +53,9 @@ const LiveTrackingScreen = () => {
         lastStopName: data.lastPassedTownName || 'Starting Point',
         nextStopName: data.nextTownName || '...',
         progressPercent: data.progressPercent || 0,
+        latitude: data.currentLatitude,
+        longitude: data.currentLongitude,
+        trackingMode: data.trackingMode,
       });
     } catch (error) {
       console.log('No active trip found');
@@ -72,7 +76,7 @@ const LiveTrackingScreen = () => {
     connection.on('ReceiveBusStatus', (updateBusId, busStatus) => {
       // backend now sends (busId, status)
       if (updateBusId.toString() === busId?.toString()) {
-        setStatus(busStatus);
+        setStatus((prev: any) => ({ ...prev, ...busStatus }));
       }
     });
 
@@ -144,6 +148,26 @@ const LiveTrackingScreen = () => {
             <Text style={styles.nextValue}>{status?.nextStopName || '...'}</Text>
           </View>
         </View>
+
+        {/* Map View */}
+        {status?.latitude && status?.longitude ? (
+          <View style={styles.mapContainer}>
+            <FreeMap 
+              latitude={status.latitude} 
+              longitude={status.longitude} 
+              zoom={15} 
+            />
+          </View>
+        ) : (
+          <View style={[styles.mapContainer, styles.mapFallback]}>
+            <Ionicons name="map-outline" size={48} color="#333" />
+            <Text style={styles.mapFallbackText}>
+              {status?.trackingMode === 'Manual' 
+                ? 'GPS Tracking disabled (Manual Mode)' 
+                : 'Waiting for GPS signal...'}
+            </Text>
+          </View>
+        )}
 
         {/* Action Buttons (Rating/Report) */}
         <View style={styles.actionRow}>
@@ -253,6 +277,9 @@ const styles = StyleSheet.create({
   cancelText: { color: '#666', fontWeight: 'bold' },
   submitBtn: { flex: 2, backgroundColor: '#FF6200', paddingVertical: 15, borderRadius: 12, alignItems: 'center' },
   submitText: { color: '#FFF', fontWeight: 'bold' },
+  mapContainer: { width: '100%', height: 300, borderRadius: 20, overflow: 'hidden', marginTop: 20, borderWidth: 1, borderColor: '#222' },
+  mapFallback: { backgroundColor: '#111', justifyContent: 'center', alignItems: 'center', gap: 10 },
+  mapFallbackText: { color: '#666', fontSize: 14, fontWeight: 'bold' },
 });
 
 export default LiveTrackingScreen;

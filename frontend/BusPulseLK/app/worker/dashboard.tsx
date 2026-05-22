@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,6 +44,8 @@ const StaffDashboard = () => {
   const [routes, setRoutes] = useState<TimetableEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [modeModalVisible, setModeModalVisible] = useState(false);
+  const [selectedTimetable, setSelectedTimetable] = useState<TimetableEntry | null>(null);
 
   useEffect(() => {
     fetchStaffData();
@@ -79,15 +82,22 @@ const StaffDashboard = () => {
     ]);
   };
 
-  const startTrip = (timetable: TimetableEntry) => {
-    if (!bus) return;
+  const promptStartTrip = (timetable: TimetableEntry) => {
+    setSelectedTimetable(timetable);
+    setModeModalVisible(true);
+  };
+
+  const startTrip = (mode: 'Manual' | 'Automatic') => {
+    if (!bus || !selectedTimetable) return;
+    setModeModalVisible(false);
     router.push({
       pathname: '/worker/trip-view',
       params: { 
         busId: bus.id, 
-        timetableId: timetable.id,
-        routeName: timetable.route.name,
-        departureTime: timetable.departureTime
+        timetableId: selectedTimetable.id,
+        routeName: selectedTimetable.route.name,
+        departureTime: selectedTimetable.departureTime,
+        trackingMode: mode
       }
     });
   };
@@ -170,7 +180,7 @@ const StaffDashboard = () => {
               <TouchableOpacity 
                 key={route.id} 
                 style={styles.routeItem}
-                onPress={() => startTrip(route)}
+                onPress={() => promptStartTrip(route)}
               >
                 <View style={styles.routeMain}>
                   <Text style={styles.routeTitle}>{route.route.name}</Text>
@@ -210,6 +220,44 @@ const StaffDashboard = () => {
           <Text style={styles.tabLabel}>Profile</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Mode Selection Modal */}
+      <Modal visible={modeModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Tracking Mode</Text>
+            
+            <TouchableOpacity 
+              style={[styles.modeCard, { borderColor: '#FF6200' }]}
+              onPress={() => startTrip('Automatic')}
+            >
+              <Ionicons name="location-outline" size={32} color="#FF6200" />
+              <View style={styles.modeTextContainer}>
+                <Text style={styles.modeTitle}>Automatic (GPS)</Text>
+                <Text style={styles.modeDesc}>App will automatically track and share your location using GPS.</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.modeCard}
+              onPress={() => startTrip('Manual')}
+            >
+              <Ionicons name="hand-right-outline" size={32} color="#AAA" />
+              <View style={styles.modeTextContainer}>
+                <Text style={styles.modeTitle}>Manual (Stops)</Text>
+                <Text style={styles.modeDesc}>You will manually mark when each town is passed.</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.cancelBtn}
+              onPress={() => setModeModalVisible(false)}
+            >
+              <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -408,6 +456,60 @@ const styles = StyleSheet.create({
     color: '#AAAAAA',
     fontSize: 11,
     marginTop: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#111',
+    borderRadius: 20,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  modalTitle: {
+    color: '#FFF',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  modeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#000',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#333',
+    marginBottom: 16,
+  },
+  modeTextContainer: {
+    marginLeft: 16,
+    flex: 1,
+  },
+  modeTitle: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  modeDesc: {
+    color: '#888',
+    fontSize: 12,
+  },
+  cancelBtn: {
+    marginTop: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  cancelText: {
+    color: '#AAA',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

@@ -14,7 +14,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as signalR from '@microsoft/signalr';
+import * as Location from 'expo-location';
 import { tripService, routeService, API_BASE_URL } from '../../services/api';
+import FreeMap from '../../components/FreeMap';
 
 interface Stop {
   id: number;
@@ -27,7 +29,7 @@ interface Stop {
 
 const TripView = () => {
   const params = useLocalSearchParams();
-  const { busId, timetableId, routeName, departureTime } = params;
+  const { busId, timetableId, routeName, departureTime, trackingMode } = params;
 
   const [tripId, setTripId] = useState<number | null>(null);
   const [stops, setStops] = useState<Stop[]>([]);
@@ -36,6 +38,10 @@ const TripView = () => {
   const [updating, setUpdating] = useState(false);
   const [isReversed, setIsReversed] = useState(false);
   
+  // GPS Tracking State
+  const [currentLocation, setCurrentLocation] = useState<{latitude: number, longitude: number} | null>(null);
+  const locationSubscription = useRef<Location.LocationSubscription | null>(null);
+
   const connectionRef = useRef<signalR.HubConnection | null>(null);
 
   useEffect(() => {
@@ -45,14 +51,24 @@ const TripView = () => {
       if (connectionRef.current) {
         connectionRef.current.stop();
       }
+      if (locationSubscription.current) {
+        locationSubscription.current.remove();
+      }
     };
   }, []);
+
+  // Start tracking only when tripId is available and mode is Automatic
+  useEffect(() => {
+    if (tripId && trackingMode === 'Automatic') {
+      startLocationTracking();
+    }
+  }, [tripId, trackingMode]);
 
   const initTrip = async (reverse: boolean = false) => {
     try {
       setLoading(true);
       // 1. Start/Get the trip (Server returns existing trip if active)
-      const tripData: any = await tripService.start(Number(timetableId));
+      const tripData: any = await tripService.start(Number(timetableId), trackingMode as string);
       setTripId(tripData.id);
 
       // 2. Get route stops
@@ -101,6 +117,55 @@ const TripView = () => {
     } catch (err) {
       console.log('SignalR Connection Error: ', err);
     }
+  };
+
+  const startLocationTracking = async () => {
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'Location permission is required for Automatic tracking.');
+      return;
+    }
+
+    const sendLocationUpdate = async (latitude: number, longitude: number) => {
+      setCurrentLocation({ latitude, longitude });
+      if (tripId) {
+        try {
+          await tripService.updateLocation(tripId, latitude, longitude);
+          if (connectionRef.current) {
+            await connectionRef.current.invoke('UpdateBusStatus', busId.toString(), {
+              tripId,
+              latitude,
+              longitude,
+              timestamp: new Date().toISOString()
+            });
+          }
+        } catch (e) {
+          console.log('Error updating location', e);
+        }
+      }
+    };
+
+    try {
+      // Get initial position quickly
+      const initialLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      await sendLocationUpdate(initialLocation.coords.latitude, initialLocation.coords.longitude);
+    } catch (e) {
+      console.log('Could not get initial location', e);
+    }
+
+    // Then watch for changes
+    locationSubscription.current = await Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.Balanced,
+        timeInterval: 10000, // Update every 10 seconds
+        distanceInterval: 50, // Or every 50 meters
+      },
+      async (location) => {
+        await sendLocationUpdate(location.coords.latitude, location.coords.longitude);
+      }
+    );
   };
 
   const markStopPassed = async (index: number) => {
@@ -206,7 +271,9 @@ const TripView = () => {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Route Progress</Text>
+          <Text style={styles.sectionTitle}>
+            {trackingMode === 'Automatic' ? 'Live GPS Map' : 'Route Progress'}
+          </Text>
           {isReversed && (
             <View style={styles.reverseBadge}>
               <Ionicons name="swap-vertical" size={12} color="#FF6200" />
@@ -215,61 +282,78 @@ const TripView = () => {
           )}
         </View>
 
-        <View style={styles.timeline}>
-          {stops.map((stop, index) => {
-            const isPassed = index <= currentStopIndex;
-            const isNext = index === currentStopIndex + 1;
-            
-            return (
-              <View key={`${stop.id}-${index}`} style={styles.timelineItem}>
-                <View style={styles.leftCol}>
-                  <View style={[
-                    styles.circle, 
-                    isPassed && styles.circlePassed,
-                    isNext && styles.circleNext
-                  ]}>
-                    {isPassed ? (
-                      <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-                    ) : (
-                      <Text style={[styles.orderText, isNext && { color: '#FF6200' }]}>{index + 1}</Text>
-                    )}
-                  </View>
-                  {index < stops.length - 1 && (
-                    <View style={[styles.line, isPassed && styles.linePassed]} />
-                  )}
-                </View>
-                
-                <View style={styles.rightCol}>
-                  <View style={styles.stopInfo}>
-                    <Text style={[
-                      styles.stopName, 
-                      isPassed && styles.textPassed,
-                      isNext && styles.textNext
-                    ]}>
-                      {stop.town.name}
-                    </Text>
-                    {isNext && (
-                      <TouchableOpacity 
-                        style={styles.markBtn} 
-                        onPress={() => markStopPassed(index)}
-                        disabled={updating}
-                      >
-                        {updating ? (
-                          <ActivityIndicator size="small" color="#FFFFFF" />
-                        ) : (
-                          <Text style={styles.markBtnText}>Mark Passed</Text>
-                        )}
-                      </TouchableOpacity>
-                    )}
-                    {isPassed && (
-                      <Text style={styles.passedAt}>Passed</Text>
-                    )}
-                  </View>
-                </View>
+        {trackingMode === 'Automatic' ? (
+          <View style={styles.mapContainer}>
+            {currentLocation ? (
+              <FreeMap 
+                latitude={currentLocation.latitude} 
+                longitude={currentLocation.longitude} 
+                zoom={15} 
+              />
+            ) : (
+              <View style={styles.mapLoading}>
+                <ActivityIndicator color="#FF6200" size="large" />
+                <Text style={{ color: '#888', marginTop: 10 }}>Acquiring GPS Signal...</Text>
               </View>
-            );
-          })}
-        </View>
+            )}
+          </View>
+        ) : (
+          <View style={styles.timeline}>
+            {stops.map((stop, index) => {
+              const isPassed = index <= currentStopIndex;
+              const isNext = index === currentStopIndex + 1;
+              
+              return (
+                <View key={`${stop.id}-${index}`} style={styles.timelineItem}>
+                  <View style={styles.leftCol}>
+                    <View style={[
+                      styles.circle, 
+                      isPassed && styles.circlePassed,
+                      isNext && styles.circleNext
+                    ]}>
+                      {isPassed ? (
+                        <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                      ) : (
+                        <Text style={[styles.orderText, isNext && { color: '#FF6200' }]}>{index + 1}</Text>
+                      )}
+                    </View>
+                    {index < stops.length - 1 && (
+                      <View style={[styles.line, isPassed && styles.linePassed]} />
+                    )}
+                  </View>
+                  
+                  <View style={styles.rightCol}>
+                    <View style={styles.stopInfo}>
+                      <Text style={[
+                        styles.stopName, 
+                        isPassed && styles.textPassed,
+                        isNext && styles.textNext
+                      ]}>
+                        {stop.town.name}
+                      </Text>
+                      {isNext && (
+                        <TouchableOpacity 
+                          style={styles.markBtn} 
+                          onPress={() => markStopPassed(index)}
+                          disabled={updating}
+                        >
+                          {updating ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                          ) : (
+                            <Text style={styles.markBtnText}>Mark Passed</Text>
+                          )}
+                        </TouchableOpacity>
+                      )}
+                      {isPassed && (
+                        <Text style={styles.passedAt}>Passed</Text>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
       </ScrollView>
 
       <View style={styles.footer}>
@@ -472,6 +556,20 @@ const styles = StyleSheet.create({
     color: '#D32F2F',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  mapContainer: {
+    height: 400,
+    width: '100%',
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  mapLoading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#111',
   },
 });
 

@@ -224,11 +224,14 @@ export const timetableService = {
 // ── Trip service ──────────────────────────────────────────────────────────────
 
 export const tripService = {
-  start: (timetableId: number) => apiPost('/trips/start', { timetableId }),
+  start: (timetableId: number, trackingMode: string = 'Manual') =>
+    apiPost('/trips/start', { timetableId, trackingMode }),
   getById: (id: number) => apiGet(`/trips/${id}`),
   getActiveByBus: (busId: number) => apiGet(`/trips/active/${busId}`),
-  updateProgress: (id: number, townId: number) => 
+  updateProgress: (id: number, townId: number) =>
     apiPost(`/trips/${id}/progress`, { townId }),
+  updateLocation: (id: number, latitude: number, longitude: number) =>
+    apiPost(`/trips/${id}/location`, { latitude, longitude }),
   end: (id: number) => apiPost(`/trips/${id}/end`, {}),
 };
 
@@ -256,11 +259,11 @@ export const favoriteService = {
 };
 
 export const ratingService = {
-  submit: (data: { busId: number; stars: number; comment?: string }) => 
+  submit: (data: { busId: number; stars: number; comment?: string }) =>
     apiPost('/ratings', data),
 };
 
 export const reportService = {
-  submit: (data: { busId: number; tripId?: number; description: string }) => 
+  submit: (data: { busId: number; tripId?: number; description: string }) =>
     apiPost('/issueReports', data),
 };
