@@ -106,9 +106,9 @@ const BusOwnerDashboard = () => {
             <Text style={styles.cardText}>Manage Staff</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.card}>
-            <Ionicons name="document-text-outline" size={40} color="#FF6200" />
-            <Text style={styles.cardText}>View Reports</Text>
+          <TouchableOpacity style={styles.card} onPress={() => router.push('./request-route')}>
+            <Ionicons name="git-branch-outline" size={40} color="#FF6200" />
+            <Text style={styles.cardText}>Request Route</Text>
           </TouchableOpacity>
         </View>
 

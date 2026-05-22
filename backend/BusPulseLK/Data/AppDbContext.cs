@@ -23,6 +23,8 @@ namespace BusPulseLK.Data
         public DbSet<Rating> Ratings { get; set; }
         public DbSet<IssueReport> IssueReports { get; set; }
         public DbSet<RegularPassengerRequest> RegularPassengerRequests { get; set; }
+        public DbSet<RouteRequest> RouteRequests { get; set; }
+        public DbSet<RouteRequestStop> RouteRequestStops { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -303,6 +305,52 @@ namespace BusPulseLK.Data
                 .WithMany()
                 .HasForeignKey(r => r.ReviewedByUserId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // ── RouteRequests ─────────────────────────────────────────────────
+            modelBuilder.Entity<RouteRequest>()
+                .ToTable("route_requests");
+
+            modelBuilder.Entity<RouteRequest>()
+                .HasOne(r => r.OriginTown)
+                .WithMany()
+                .HasForeignKey(r => r.OriginTownId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<RouteRequest>()
+                .HasOne(r => r.DestinationTown)
+                .WithMany()
+                .HasForeignKey(r => r.DestinationTownId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<RouteRequest>()
+                .HasOne(r => r.RequestedByUser)
+                .WithMany()
+                .HasForeignKey(r => r.RequestedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ── RouteRequestStops ─────────────────────────────────────────────
+            modelBuilder.Entity<RouteRequestStop>()
+                .ToTable("route_request_stops");
+
+            modelBuilder.Entity<RouteRequestStop>()
+                .HasIndex(rs => new { rs.RouteRequestId, rs.StopOrder })
+                .IsUnique();
+
+            modelBuilder.Entity<RouteRequestStop>()
+                .HasIndex(rs => new { rs.RouteRequestId, rs.TownId })
+                .IsUnique();
+
+            modelBuilder.Entity<RouteRequestStop>()
+                .HasOne(rs => rs.RouteRequest)
+                .WithMany(r => r.Stops)
+                .HasForeignKey(rs => rs.RouteRequestId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RouteRequestStop>()
+                .HasOne(rs => rs.Town)
+                .WithMany()
+                .HasForeignKey(rs => rs.TownId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

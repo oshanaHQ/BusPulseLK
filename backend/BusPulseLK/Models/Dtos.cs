@@ -72,6 +72,75 @@ namespace BusPulseLK.Models
         public string Name { get; set; } = null!;
     }
 
+    // ── Route Request DTOs ───────────────────────────────────────────────────
+
+    public class CreateRouteRequestDto
+    {
+        [Required]
+        [StringLength(150, MinimumLength = 3)]
+        public string Name { get; set; } = null!;
+
+        [Required]
+        [StringLength(20)]
+        public string RouteNumber { get; set; } = null!;
+
+        [StringLength(500)]
+        public string? Description { get; set; }
+
+        [Required]
+        public int OriginTownId { get; set; }
+
+        [Required]
+        public int DestinationTownId { get; set; }
+
+        [Required]
+        [MinLength(2)]
+        public List<int> StopTownIds { get; set; } = new();
+    }
+
+    public class UpdateRouteRequestDto
+    {
+        [StringLength(150, MinimumLength = 3)]
+        public string? Name { get; set; }
+
+        [StringLength(20)]
+        public string? RouteNumber { get; set; }
+
+        [StringLength(500)]
+        public string? Description { get; set; }
+
+        public List<int>? StopTownIds { get; set; }
+    }
+
+    public class RejectRouteRequestDto
+    {
+        [Required]
+        [StringLength(300, MinimumLength = 3)]
+        public string StatusReason { get; set; } = null!;
+    }
+
+    public class RouteRequestResponseDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = null!;
+        public string RouteNumber { get; set; } = null!;
+        public string? Description { get; set; }
+        public string Status { get; set; } = null!;
+        public string? StatusReason { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public TownSummaryDto OriginTown { get; set; } = null!;
+        public TownSummaryDto DestinationTown { get; set; } = null!;
+        public UserSummaryDto RequestedByUser { get; set; } = null!;
+        public List<RouteRequestStopDto> Stops { get; set; } = new();
+    }
+
+    public class RouteRequestStopDto
+    {
+        public int Id { get; set; }
+        public int StopOrder { get; set; }
+        public TownSummaryDto Town { get; set; } = null!;
+    }
+
     // ── Bus DTOs ─────────────────────────────────────────────────────────────
 
     public class CreateBusDto

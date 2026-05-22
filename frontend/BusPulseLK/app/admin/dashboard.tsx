@@ -50,9 +50,9 @@ const AdminDashboard = () => {
             <Text style={styles.cardText}>Manage Routes</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.card}>
-            <Ionicons name="people-outline" size={40} color="#FF6200" />
-            <Text style={styles.cardText}>Approve Owners</Text>
+          <TouchableOpacity style={styles.card} onPress={() => router.push('./route-requests')}>
+            <Ionicons name="git-branch-outline" size={40} color="#FF6200" />
+            <Text style={styles.cardText}>Route Requests</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 

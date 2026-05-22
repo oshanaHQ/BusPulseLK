@@ -267,3 +267,16 @@ export const reportService = {
   submit: (data: { busId: number; tripId?: number; description: string }) =>
     apiPost('/issueReports', data),
 };
+
+// ── Route Request service ─────────────────────────────────────────────────────
+
+export const routeRequestService = {
+  getAll: (status?: string) =>
+    apiGet(`/routerequests${status ? `?status=${status}` : ''}`),
+  getById: (id: number) => apiGet(`/routerequests/${id}`),
+  create: (data: unknown) => apiPost('/routerequests', data),
+  update: (id: number, data: unknown) => apiPut(`/routerequests/${id}`, data),
+  approve: (id: number) => apiPost(`/routerequests/${id}/approve`, {}),
+  reject: (id: number, statusReason: string) =>
+    apiPost(`/routerequests/${id}/reject`, { statusReason }),
+};
