@@ -49,9 +49,15 @@ const LiveTrackingScreen = () => {
       const data: any = await tripService.getActiveByBus(Number(busId));
       setTrip(data);
       
-      if (timetableId) {
-        const ttData = await timetableService.getById(Number(timetableId));
-        setTimetable(ttData);
+      // Load timetable: use param if available, otherwise use the trip's timetableId
+      const ttId = timetableId ? Number(timetableId) : data.timetableId;
+      if (ttId) {
+        try {
+          const ttData = await timetableService.getById(ttId);
+          setTimetable(ttData);
+        } catch (err) {
+          console.log('Error fetching timetable', err);
+        }
       }
       
       // Populate status immediately from initial data

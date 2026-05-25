@@ -487,7 +487,8 @@ const AssignRoute = () => {
                       try {
                         const stops = await routeService.getStops(item.id);
                         setRouteStops(stops as any[]);
-                        setStationTimes({});
+                        setForwardTimes({});
+                        setReturnTimes({});
                       } catch (err) {
                         console.log('Error fetching stops', err);
                       }
