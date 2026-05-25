@@ -219,6 +219,8 @@ namespace BusPulseLK.Models
 
         [StringLength(50)]
         public string OperatingDays { get; set; } = "Daily";
+
+        public List<StationTimeDto>? StationTimes { get; set; }
     }
 
     public class UpdateTimetableDto
@@ -230,6 +232,8 @@ namespace BusPulseLK.Models
         public string? OperatingDays { get; set; }
 
         public bool? IsActive { get; set; }
+
+        public List<StationTimeDto>? StationTimes { get; set; }
     }
 
     public class TimetableResponseDto
@@ -241,6 +245,7 @@ namespace BusPulseLK.Models
         public DateTime CreatedAt { get; set; }
         public BusSummaryDto Bus { get; set; } = null!;
         public RouteSummaryDto Route { get; set; } = null!;
+        public List<StationTimeDto> StationTimes { get; set; } = new();
     }
 
     public class BusSummaryDto
@@ -249,6 +254,12 @@ namespace BusPulseLK.Models
         public string NumberPlate { get; set; } = null!;
         public string? Name { get; set; }
         public string BusType { get; set; } = null!;
+        public bool IsActive { get; set; }
+        public int Capacity { get; set; }
+        public int OwnerId { get; set; }
+        public UserSummaryDto Owner { get; set; } = null!;
+        public UserSummaryDto? Driver { get; set; }
+        public UserSummaryDto? Conductor { get; set; }
     }
 
     public class RouteSummaryDto
@@ -258,7 +269,18 @@ namespace BusPulseLK.Models
         public string RouteNumber { get; set; } = null!;
         public string OriginTown { get; set; } = null!;
         public string DestinationTown { get; set; } = null!;
+        public double DistanceKm { get; set; }
+        public decimal BaseFare { get; set; }
     }
+
+    public class StationTimeDto
+    {
+        public int RouteStopId { get; set; }
+        public int TownId { get; set; }
+        public string ExpectedTime { get; set; } = null!;
+        public bool IsReturnJourney { get; set; }
+    }
+
 
     // ── Staff Assignment DTO ─────────────────────────────────────────────────
 
@@ -290,5 +312,6 @@ namespace BusPulseLK.Models
         public int TimetableId { get; set; }
         public string DepartureTime { get; set; } = null!;
         public string OperatingDays { get; set; } = null!;
+        public List<StationTimeDto> StationTimes { get; set; } = new();
     }
 }

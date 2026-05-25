@@ -35,6 +35,7 @@ namespace BusPulseLK.Controllers
                     .ThenInclude(r => r.OriginTown)
                 .Include(t => t.Route)
                     .ThenInclude(r => r.DestinationTown)
+                .Include(t => t.StationTimes).ThenInclude(st => st.RouteStop)
                 .AsQueryable();
 
             if (activeOnly == true)
@@ -65,6 +66,7 @@ namespace BusPulseLK.Controllers
                 .Include(t => t.Bus)
                 .Include(t => t.Route).ThenInclude(r => r.OriginTown)
                 .Include(t => t.Route).ThenInclude(r => r.DestinationTown)
+                .Include(t => t.StationTimes).ThenInclude(st => st.RouteStop)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (timetable == null)
@@ -89,6 +91,7 @@ namespace BusPulseLK.Controllers
                 .Include(t => t.Route).ThenInclude(r => r.OriginTown)
                 .Include(t => t.Route).ThenInclude(r => r.DestinationTown)
                 .Include(t => t.Route).ThenInclude(r => r.Stops)
+                .Include(t => t.StationTimes).ThenInclude(st => st.RouteStop)
                 .Where(t => t.IsActive && t.Route.IsActive)
                 .AsQueryable();
 
@@ -185,7 +188,24 @@ namespace BusPulseLK.Controllers
                 DepartureTime = departure,
                 OperatingDays = dto.OperatingDays,
                 CreatedById   = ownerId.Value,
+                StationTimes  = new List<TimetableStationTime>()
             };
+
+            if (dto.StationTimes != null)
+            {
+                foreach (var st in dto.StationTimes)
+                {
+                    if (TimeSpan.TryParse(st.ExpectedTime, out var expTime))
+                    {
+                        timetable.StationTimes.Add(new TimetableStationTime
+                        {
+                            RouteStopId = st.RouteStopId,
+                            ExpectedTime = expTime,
+                            IsReturnJourney = st.IsReturnJourney
+                        });
+                    }
+                }
+            }
 
             _context.Timetables.Add(timetable);
             await _context.SaveChangesAsync();
@@ -208,6 +228,7 @@ namespace BusPulseLK.Controllers
                 .Include(t => t.Bus)
                 .Include(t => t.Route).ThenInclude(r => r.OriginTown)
                 .Include(t => t.Route).ThenInclude(r => r.DestinationTown)
+                .Include(t => t.StationTimes).ThenInclude(st => st.RouteStop)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (timetable == null)
@@ -225,6 +246,24 @@ namespace BusPulseLK.Controllers
                 if (!TimeSpan.TryParse(dto.DepartureTime, out var departure))
                     return BadRequest(new { message = "Invalid departure time format." });
                 timetable.DepartureTime = departure;
+            }
+
+            if (dto.StationTimes != null)
+            {
+                _context.TimetableStationTimes.RemoveRange(timetable.StationTimes);
+                timetable.StationTimes.Clear();
+
+                foreach (var st in dto.StationTimes)
+                {
+                    if (TimeSpan.TryParse(st.ExpectedTime, out var expTime))
+                    {
+                        timetable.StationTimes.Add(new TimetableStationTime
+                        {
+                            RouteStopId = st.RouteStopId,
+                            ExpectedTime = expTime
+                        });
+                    }
+                }
             }
 
             await _context.SaveChangesAsync();
@@ -285,7 +324,14 @@ namespace BusPulseLK.Controllers
                 Name            = t.Route.Name,
                 OriginTown      = t.Route.OriginTown.Name,
                 DestinationTown = t.Route.DestinationTown.Name,
-            }
+            },
+            StationTimes = t.StationTimes?.Select(st => new StationTimeDto
+            {
+                RouteStopId = st.RouteStopId,
+                TownId = st.RouteStop?.TownId ?? 0,
+                ExpectedTime = st.ExpectedTime.ToString(@"hh\:mm"),
+                IsReturnJourney = st.IsReturnJourney
+            }).ToList() ?? new List<StationTimeDto>()
         };
     }
 }

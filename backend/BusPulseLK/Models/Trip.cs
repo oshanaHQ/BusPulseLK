@@ -49,6 +49,9 @@ namespace BusPulseLK.Models
         public double? CurrentLatitude { get; set; }
         public double? CurrentLongitude { get; set; }
 
+        /// <summary>Whether this trip is the return journey.</summary>
+        public bool IsReturnJourney { get; set; } = false;
+
         // ── Meta ─────────────────────────────────────────────────────────────
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

@@ -61,6 +61,7 @@ namespace BusPulseLK.Controllers
                 TripDate = today,
                 Status = "Started",
                 TrackingMode = dto.TrackingMode,
+                IsReturnJourney = dto.IsReturnJourney,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -104,37 +105,86 @@ namespace BusPulseLK.Controllers
 
             var dto = MapToDto(trip);
             
-            // Calculate progress for DTO
-            if (trip.LastPassedTownId.HasValue)
+            if (trip.IsReturnJourney)
+            {
+                var stops = trip.Timetable.Route.Stops.OrderByDescending(s => s.StopOrder).ToList();
+                if (trip.LastPassedTownId.HasValue)
+                {
+                    var lastStop = stops.FirstOrDefault(s => s.TownId == trip.LastPassedTownId);
+                    if (lastStop != null)
+                    {
+                        dto.LastPassedTownName = lastStop.Town.Name;
+                        var lastIndex = stops.IndexOf(lastStop);
+                        if (lastIndex + 1 < stops.Count)
+                        {
+                            dto.NextTownId = stops[lastIndex + 1].TownId;
+                            dto.NextTownName = stops[lastIndex + 1].Town.Name;
+                        }
+                        else
+                        {
+                            dto.NextTownName = "Destination Reached";
+                        }
+                        dto.ProgressPercent = ((double)(lastIndex + 1) / stops.Count) * 100;
+                    }
+                }
+                else
+                {
+                    if (stops.Count > 0)
+                    {
+                        dto.NextTownId = stops[0].TownId;
+                        dto.NextTownName = stops[0].Town.Name;
+                        dto.ProgressPercent = 0;
+                    }
+                }
+
+                dto.Stops = stops.Select(s => new
+                {
+                    townId = s.TownId,
+                    townName = s.Town.Name
+                }).ToList();
+            }
+            else
             {
                 var stops = trip.Timetable.Route.Stops.OrderBy(s => s.StopOrder).ToList();
-                var lastStop = stops.FirstOrDefault(s => s.TownId == trip.LastPassedTownId);
-                if (lastStop != null)
+                if (trip.LastPassedTownId.HasValue)
                 {
-                    dto.LastPassedTownName = lastStop.Town.Name;
-                    var lastIndex = stops.IndexOf(lastStop);
-                    if (lastIndex + 1 < stops.Count)
+                    var lastStop = stops.FirstOrDefault(s => s.TownId == trip.LastPassedTownId);
+                    if (lastStop != null)
                     {
-                        dto.NextTownName = stops[lastIndex + 1].Town.Name;
+                        dto.LastPassedTownName = lastStop.Town.Name;
+                        var lastIndex = stops.IndexOf(lastStop);
+                        if (lastIndex + 1 < stops.Count)
+                        {
+                            dto.NextTownId = stops[lastIndex + 1].TownId;
+                            dto.NextTownName = stops[lastIndex + 1].Town.Name;
+                        }
+                        else
+                        {
+                            dto.NextTownName = "Destination Reached";
+                        }
+                        dto.ProgressPercent = ((double)(lastIndex + 1) / stops.Count) * 100;
                     }
-                    else
-                    {
-                        dto.NextTownName = "Destination Reached";
-                    }
-                    dto.ProgressPercent = ((double)(lastIndex + 1) / stops.Count) * 100;
                 }
+                else
+                {
+                    if (stops.Count > 0)
+                    {
+                        dto.NextTownId = stops[0].TownId;
+                        dto.NextTownName = stops[0].Town.Name;
+                        dto.ProgressPercent = 0;
+                    }
+                }
+
+                dto.Stops = stops.Select(s => new
+                {
+                    townId = s.TownId,
+                    townName = s.Town.Name
+                }).ToList();
             }
 
             dto.CurrentLatitude = trip.CurrentLatitude;
             dto.CurrentLongitude = trip.CurrentLongitude;
             dto.TrackingMode = trip.TrackingMode;
-
-            // Include stops for the UI to render the progress
-            dto.Stops = trip.Timetable.Route.Stops.OrderBy(s => s.StopOrder).Select(s => new
-            {
-                townId = s.TownId,
-                townName = s.Town.Name
-            }).ToList();
 
             return Ok(dto);
         }
@@ -255,6 +305,7 @@ namespace BusPulseLK.Controllers
             Status = t.Status,
             TripDate = t.TripDate.ToString("yyyy-MM-dd"),
             TimetableId = t.TimetableId,
+            IsReturnJourney = t.IsReturnJourney,
             LastPassedTownId = t.LastPassedTownId,
             TrackingMode = t.TrackingMode,
             CurrentLatitude = t.CurrentLatitude,
@@ -267,6 +318,7 @@ namespace BusPulseLK.Controllers
     {
         public int TimetableId { get; set; }
         public string TrackingMode { get; set; } = "Manual";
+        public bool IsReturnJourney { get; set; }
     }
 
     public class UpdateLocationDto
@@ -286,8 +338,10 @@ namespace BusPulseLK.Controllers
         public string Status { get; set; } = null!;
         public string TripDate { get; set; } = null!;
         public int TimetableId { get; set; }
+        public bool IsReturnJourney { get; set; }
         public int? LastPassedTownId { get; set; }
         public string? LastPassedTownName { get; set; }
+        public int? NextTownId { get; set; }
         public string? NextTownName { get; set; }
         public double ProgressPercent { get; set; }
         public string TrackingMode { get; set; } = "Manual";

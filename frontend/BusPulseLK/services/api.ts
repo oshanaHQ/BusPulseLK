@@ -224,8 +224,8 @@ export const timetableService = {
 // ── Trip service ──────────────────────────────────────────────────────────────
 
 export const tripService = {
-  start: (timetableId: number, trackingMode: string = 'Manual') =>
-    apiPost('/trips/start', { timetableId, trackingMode }),
+  start: (timetableId: number, trackingMode: string = 'Manual', isReturnJourney: boolean = false) =>
+    apiPost('/trips/start', { timetableId, trackingMode, isReturnJourney }),
   getById: (id: number) => apiGet(`/trips/${id}`),
   getActiveByBus: (busId: number) => apiGet(`/trips/active/${busId}`),
   updateProgress: (id: number, townId: number) =>

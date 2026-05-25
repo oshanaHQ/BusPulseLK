@@ -51,6 +51,7 @@ interface TimetableEntry {
     originTown: string;
     destinationTown: string;
   };
+  stationTimes?: any[];
 }
 
 const AssignRoute = () => {
@@ -61,12 +62,18 @@ const AssignRoute = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   // Form State
   const [selectedBusId, setSelectedBusId] = useState<number | null>(null);
   const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null);
+  const [routeStops, setRouteStops] = useState<any[]>([]);
+  const [forwardTimes, setForwardTimes] = useState<{ [key: number]: string }>({});
+  const [returnTimes, setReturnTimes] = useState<{ [key: number]: string }>({});
+  const [timesTab, setTimesTab] = useState<'forward' | 'return'>('forward');
   const [departureTime, setDepartureTime] = useState('08:00');
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [activeStopId, setActiveStopId] = useState<number | null>(null);
   const [timeValue, setTimeValue] = useState(new Date());
   const [operatingDays, setOperatingDays] = useState('Daily');
 
@@ -110,21 +117,37 @@ const AssignRoute = () => {
       return;
     }
 
+    // Build station times with direction flag
+    const forwardPayload = Object.keys(forwardTimes)
+      .filter(k => forwardTimes[Number(k)])
+      .map(stopId => ({ routeStopId: Number(stopId), expectedTime: forwardTimes[Number(stopId)], isReturnJourney: false }));
+    const returnPayload = Object.keys(returnTimes)
+      .filter(k => returnTimes[Number(k)])
+      .map(stopId => ({ routeStopId: Number(stopId), expectedTime: returnTimes[Number(stopId)], isReturnJourney: true }));
+    const stationTimesPayload = [...forwardPayload, ...returnPayload];
+
     const payload = {
       busId: selectedBusId,
       routeId: selectedRouteId,
       departureTime,
       operatingDays,
+      stationTimes: stationTimesPayload.length > 0 ? stationTimesPayload : undefined,
     };
 
     try {
       setSubmitting(true);
-      await timetableService.create(payload);
+      if (editingId) {
+        await timetableService.update(editingId, payload);
+        Alert.alert('Success', 'Bus assignment updated successfully');
+      } else {
+        await timetableService.create(payload);
+        Alert.alert('Success', 'Bus assigned to route successfully');
+      }
       setModalVisible(false);
+      setEditingId(null);
       fetchData();
-      Alert.alert('Success', 'Bus assigned to route successfully');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to assign route');
+      Alert.alert('Error', error.message || 'Failed to save assignment');
     } finally {
       setSubmitting(false);
     }
@@ -136,7 +159,51 @@ const AssignRoute = () => {
       setTimeValue(selectedDate);
       const hours = selectedDate.getHours().toString().padStart(2, '0');
       const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
-      setDepartureTime(`${hours}:${minutes}`);
+      const timeStr = `${hours}:${minutes}`;
+      
+      if (activeStopId !== null) {
+        if (timesTab === 'return') {
+          setReturnTimes(prev => ({ ...prev, [activeStopId]: timeStr }));
+        } else {
+          setForwardTimes(prev => ({ ...prev, [activeStopId]: timeStr }));
+        }
+        setActiveStopId(null);
+      } else {
+        setDepartureTime(timeStr);
+      }
+    } else {
+      setActiveStopId(null);
+    }
+  };
+
+  const handleEdit = async (item: TimetableEntry) => {
+    setEditingId(item.id);
+    setSelectedBusId(item.bus.id);
+    setSelectedRouteId(item.route.id);
+    setDepartureTime(item.departureTime);
+    setOperatingDays(item.operatingDays);
+    setTimesTab('forward');
+
+    try {
+      const stops = await routeService.getStops(item.route.id);
+      setRouteStops(stops as any[]);
+      
+      const fMap: any = {};
+      const rMap: any = {};
+      if (item.stationTimes) {
+        item.stationTimes.forEach((st: any) => {
+          if (st.isReturnJourney) {
+            rMap[st.routeStopId] = st.expectedTime;
+          } else {
+            fMap[st.routeStopId] = st.expectedTime;
+          }
+        });
+      }
+      setForwardTimes(fMap);
+      setReturnTimes(rMap);
+      setModalVisible(true);
+    } catch (e) {
+      console.log('Error fetching stops for edit', e);
     }
   };
 
@@ -165,9 +232,14 @@ const AssignRoute = () => {
           <Ionicons name="time-outline" size={16} color="#FF6200" />
           <Text style={styles.timeText}>{item.departureTime}</Text>
         </View>
-        <TouchableOpacity onPress={() => handleDelete(item.id)}>
-          <Ionicons name="trash-outline" size={20} color="#D32F2F" />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 15 }}>
+          <TouchableOpacity onPress={() => handleEdit(item)}>
+            <Ionicons name="pencil-outline" size={20} color="#FF6200" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleDelete(item.id)}>
+            <Ionicons name="trash-outline" size={20} color="#D32F2F" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <Text style={styles.routeName}>{item.route.name}</Text>
@@ -199,7 +271,18 @@ const AssignRoute = () => {
           <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.title}>Assign Routes</Text>
-        <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.addBtn}>
+        <TouchableOpacity onPress={() => {
+          setEditingId(null);
+          setSelectedBusId(null);
+          setSelectedRouteId(null);
+          setDepartureTime('08:00');
+          setOperatingDays('Daily');
+          setRouteStops([]);
+          setForwardTimes({});
+          setReturnTimes({});
+          setTimesTab('forward');
+          setModalVisible(true);
+        }} style={styles.addBtn}>
           <Ionicons name="add-circle" size={32} color="#FF6200" />
         </TouchableOpacity>
       </View>
@@ -235,7 +318,7 @@ const AssignRoute = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>New Assignment</Text>
+              <Text style={styles.modalTitle}>{editingId ? 'Edit Assignment' : 'New Assignment'}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <Ionicons name="close" size={28} color="#FFFFFF" />
               </TouchableOpacity>
@@ -271,7 +354,10 @@ const AssignRoute = () => {
                   <Text style={styles.label}>Departure Time</Text>
                   <TouchableOpacity 
                     style={styles.pickerTrigger}
-                    onPress={() => setShowTimePicker(true)}
+                    onPress={() => {
+                      setActiveStopId(null);
+                      setShowTimePicker(true);
+                    }}
                   >
                     <Text style={styles.pickerText}>{departureTime}</Text>
                     <Ionicons name="time-outline" size={20} color="#FF6200" />
@@ -298,13 +384,62 @@ const AssignRoute = () => {
                   />
                 </View>
               </View>
+
+              {/* Station Times (Optional) */}
+              {routeStops.length > 0 && (
+                <View style={{ marginTop: 10 }}>
+                  <Text style={styles.label}>Expected Times (Optional)</Text>
+                  {/* Forward / Return tabs */}
+                  <View style={{ flexDirection: 'row', marginBottom: 12, gap: 8 }}>
+                    <TouchableOpacity
+                      onPress={() => setTimesTab('forward')}
+                      style={[
+                        styles.tabBtn,
+                        timesTab === 'forward' && styles.tabBtnActive
+                      ]}
+                    >
+                      <Text style={[styles.tabBtnText, timesTab === 'forward' && styles.tabBtnTextActive]}>Forward ↓</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setTimesTab('return')}
+                      style={[
+                        styles.tabBtn,
+                        timesTab === 'return' && styles.tabBtnActive
+                      ]}
+                    >
+                      <Text style={[styles.tabBtnText, timesTab === 'return' && styles.tabBtnTextActive]}>Return ↑</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Show stops in correct direction order */}
+                  {(timesTab === 'return' ? [...routeStops].reverse() : routeStops).map(stop => {
+                    const currentTimes = timesTab === 'return' ? returnTimes : forwardTimes;
+                    return (
+                      <View key={stop.id} style={[styles.row, { alignItems: 'center', marginBottom: 10 }]}>
+                        <Text style={{ flex: 1, color: '#FFF' }}>{stop.town.name}</Text>
+                        <TouchableOpacity 
+                          style={[styles.input, { flex: 1, marginBottom: 0, paddingVertical: 8, alignItems: 'center' }]}
+                          onPress={() => {
+                            setActiveStopId(stop.id);
+                            setShowTimePicker(true);
+                          }}
+                        >
+                          <Text style={{ color: currentTimes[stop.id] ? '#FFF' : '#555' }}>
+                            {currentTimes[stop.id] || 'HH:mm'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
             </ScrollView>
 
             <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
               {submitting ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.saveBtnText}>Assign Bus</Text>
+                <Text style={styles.saveBtnText}>{editingId ? 'Save Changes' : 'Assign Bus'}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -346,7 +481,17 @@ const AssignRoute = () => {
                 renderItem={({ item }) => (
                   <TouchableOpacity 
                     style={styles.pickerItem}
-                    onPress={() => { setSelectedRouteId(item.id); setShowRoutePicker(false); }}
+                    onPress={async () => { 
+                      setSelectedRouteId(item.id); 
+                      setShowRoutePicker(false); 
+                      try {
+                        const stops = await routeService.getStops(item.id);
+                        setRouteStops(stops as any[]);
+                        setStationTimes({});
+                      } catch (err) {
+                        console.log('Error fetching stops', err);
+                      }
+                    }}
                   >
                     <Text style={styles.pickerItemText}>{item.name}</Text>
                     <Text style={styles.pickerItemSubtext}>{item.originTown.name} → {item.destinationTown.name}</Text>
@@ -590,6 +735,27 @@ const styles = StyleSheet.create({
     color: '#FF6200',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    backgroundColor: '#1A1A1A',
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  tabBtnActive: {
+    backgroundColor: '#FF620022',
+    borderColor: '#FF6200',
+  },
+  tabBtnText: {
+    color: '#666',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  tabBtnTextActive: {
+    color: '#FF6200',
   },
 });
 

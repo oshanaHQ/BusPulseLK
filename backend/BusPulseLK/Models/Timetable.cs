@@ -41,5 +41,8 @@ namespace BusPulseLK.Models
         /// <summary>BusOwner who created this timetable entry</summary>
         public int CreatedById { get; set; }
         public User CreatedBy { get; set; } = null!;
+
+        // ── Station Expected Times ───────────────────────────────────────────
+        public ICollection<TimetableStationTime> StationTimes { get; set; } = new List<TimetableStationTime>();
     }
 }

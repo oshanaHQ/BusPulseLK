@@ -16,12 +16,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as signalR from '@microsoft/signalr';
-import { tripService, ratingService, reportService, API_BASE_URL } from '../../services/api';
+import { tripService, timetableService, ratingService, reportService, API_BASE_URL } from '../../services/api';
 import FreeMap from '../../components/FreeMap';
 
 const LiveTrackingScreen = () => {
   const { busId, timetableId } = useLocalSearchParams();
   const [trip, setTrip] = useState<any>(null);
+  const [timetable, setTimetable] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<any>(null);
   
@@ -48,14 +49,22 @@ const LiveTrackingScreen = () => {
       const data: any = await tripService.getActiveByBus(Number(busId));
       setTrip(data);
       
+      if (timetableId) {
+        const ttData = await timetableService.getById(Number(timetableId));
+        setTimetable(ttData);
+      }
+      
       // Populate status immediately from initial data
       setStatus({
+        lastStopId: data.lastPassedTownId,
         lastStopName: data.lastPassedTownName || 'Starting Point',
+        nextStopId: data.nextTownId,
         nextStopName: data.nextTownName || '...',
         progressPercent: data.progressPercent || 0,
         latitude: data.currentLatitude,
         longitude: data.currentLongitude,
         trackingMode: data.trackingMode,
+        isReturnJourney: data.isReturnJourney || false,
       });
     } catch (error) {
       console.log('No active trip found');
@@ -109,6 +118,27 @@ const LiveTrackingScreen = () => {
       Alert.alert('Error', error.message);
     }
   };
+
+  const getDelayStatus = () => {
+    if (!status?.nextStopId || !timetable?.stationTimes) return null;
+    // Filter by the correct journey direction
+    const isReturn = status.isReturnJourney || false;
+    const directionTimes = timetable.stationTimes.filter((st: any) => !!st.isReturnJourney === isReturn);
+    const expectedTimeStr = directionTimes.find((st: any) => st.townId === status.nextStopId)?.expectedTime;
+    if (!expectedTimeStr) return null;
+    
+    const now = new Date();
+    const [hours, minutes] = expectedTimeStr.split(':');
+    const expectedDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hours), parseInt(minutes));
+    
+    const diffMins = Math.floor((now.getTime() - expectedDate.getTime()) / 60000);
+    
+    if (diffMins > 5) return { text: `Delayed by ${diffMins} mins`, color: '#D32F2F', expectedTime: expectedTimeStr };
+    if (diffMins < -5) return { text: `Early by ${Math.abs(diffMins)} mins`, color: '#4CAF50', expectedTime: expectedTimeStr };
+    return { text: 'On Time', color: '#4CAF50', expectedTime: expectedTimeStr };
+  };
+
+  const delayStatus = getDelayStatus();
 
   if (loading) return <View style={styles.center}><ActivityIndicator color="#FF6200" /></View>;
 
@@ -167,6 +197,14 @@ const LiveTrackingScreen = () => {
             <View style={styles.nextStopBox}>
               <Text style={styles.nextLabel}>Next Stop</Text>
               <Text style={styles.nextValue}>{status?.nextStopName || '...'}</Text>
+              {delayStatus && (
+                <View style={{ marginTop: 10, alignItems: 'center' }}>
+                  <Text style={{ color: '#AAAAAA', fontSize: 12 }}>Normal Time: {delayStatus.expectedTime}</Text>
+                  <View style={{ backgroundColor: delayStatus.color + '22', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginTop: 4 }}>
+                    <Text style={{ color: delayStatus.color, fontWeight: 'bold', fontSize: 14 }}>{delayStatus.text}</Text>
+                  </View>
+                </View>
+              )}
             </View>
           </View>
         )}

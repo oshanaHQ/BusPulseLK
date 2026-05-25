@@ -14,6 +14,7 @@ namespace BusPulseLK.Data
         public DbSet<RouteStop> RouteStops { get; set; }
         public DbSet<Bus> Buses { get; set; }
         public DbSet<Timetable> Timetables { get; set; }
+        public DbSet<TimetableStationTime> TimetableStationTimes { get; set; }
 
         // ── New DbSets ───────────────────────────────────────────────────────
         public DbSet<Trip> Trips { get; set; }
@@ -357,6 +358,26 @@ namespace BusPulseLK.Data
                 .WithMany()
                 .HasForeignKey(rs => rs.TownId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // ── TimetableStationTimes ─────────────────────────────────────────
+            modelBuilder.Entity<TimetableStationTime>()
+                .ToTable("timetable_station_times");
+
+            modelBuilder.Entity<TimetableStationTime>()
+                .HasIndex(tst => new { tst.TimetableId, tst.RouteStopId })
+                .IsUnique();
+
+            modelBuilder.Entity<TimetableStationTime>()
+                .HasOne(tst => tst.Timetable)
+                .WithMany(t => t.StationTimes)
+                .HasForeignKey(tst => tst.TimetableId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TimetableStationTime>()
+                .HasOne(tst => tst.RouteStop)
+                .WithMany()
+                .HasForeignKey(tst => tst.RouteStopId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

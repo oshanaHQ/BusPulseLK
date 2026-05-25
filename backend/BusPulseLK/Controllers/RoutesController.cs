@@ -215,6 +215,7 @@ namespace BusPulseLK.Controllers
                 .Include(t => t.Bus).ThenInclude(b => b.Owner)
                 .Include(t => t.Bus).ThenInclude(b => b.Driver)
                 .Include(t => t.Bus).ThenInclude(b => b.Conductor)
+                .Include(t => t.StationTimes).ThenInclude(st => st.RouteStop)
                 .Where(t => t.RouteId == id && t.IsActive && t.Bus.IsActive)
                 .OrderBy(t => t.DepartureTime)
                 .ToListAsync();
@@ -242,6 +243,12 @@ namespace BusPulseLK.Controllers
                         TimetableId   = t.Id,
                         DepartureTime = t.DepartureTime.ToString(@"hh\:mm"),
                         OperatingDays = t.OperatingDays,
+                        StationTimes = t.StationTimes?.Select(st => new StationTimeDto
+                        {
+                            RouteStopId = st.RouteStopId,
+                            TownId = st.RouteStop?.TownId ?? 0,
+                            ExpectedTime = st.ExpectedTime.ToString(@"hh\:mm")
+                        }).ToList() ?? new List<StationTimeDto>()
                     }).ToList()
                 })
                 .ToList();

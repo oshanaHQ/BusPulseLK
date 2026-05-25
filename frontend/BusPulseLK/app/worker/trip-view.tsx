@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as signalR from '@microsoft/signalr';
 import * as Location from 'expo-location';
-import { tripService, routeService, API_BASE_URL } from '../../services/api';
+import { tripService, routeService, timetableService, API_BASE_URL } from '../../services/api';
 import FreeMap from '../../components/FreeMap';
 
 interface Stop {
@@ -40,6 +40,7 @@ const TripView = () => {
   
   // GPS Tracking State
   const [currentLocation, setCurrentLocation] = useState<{latitude: number, longitude: number} | null>(null);
+  const [timetable, setTimetable] = useState<any>(null);
   const locationSubscription = useRef<Location.LocationSubscription | null>(null);
 
   const connectionRef = useRef<signalR.HubConnection | null>(null);
@@ -68,8 +69,16 @@ const TripView = () => {
     try {
       setLoading(true);
       // 1. Start/Get the trip (Server returns existing trip if active)
-      const tripData: any = await tripService.start(Number(timetableId), trackingMode as string);
+      const tripData: any = await tripService.start(Number(timetableId), trackingMode as string, reverse);
       setTripId(tripData.id);
+
+      // fetch timetable
+      try {
+        const ttData = await timetableService.getById(Number(timetableId));
+        setTimetable(ttData);
+      } catch (err) {
+        console.log('Error fetching timetable', err);
+      }
 
       // 2. Get route stops
       const routeData: any = await routeService.getAll();
@@ -240,6 +249,24 @@ const TripView = () => {
     );
   };
 
+  const getDelayStatus = (townId: number) => {
+    if (!timetable?.stationTimes) return null;
+    // Filter times by journey direction
+    const directionTimes = timetable.stationTimes.filter((st: any) => !!st.isReturnJourney === isReversed);
+    const expectedTimeStr = directionTimes.find((st: any) => st.townId === townId)?.expectedTime;
+    if (!expectedTimeStr) return null;
+    
+    const now = new Date();
+    const [hours, minutes] = expectedTimeStr.split(':');
+    const expectedDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hours), parseInt(minutes));
+    
+    const diffMins = Math.floor((now.getTime() - expectedDate.getTime()) / 60000);
+    
+    if (diffMins > 5) return { text: `Delayed ${diffMins}m`, color: '#D32F2F', expectedTime: expectedTimeStr };
+    if (diffMins < -5) return { text: `Early ${Math.abs(diffMins)}m`, color: '#4CAF50', expectedTime: expectedTimeStr };
+    return { text: 'On Time', color: '#4CAF50', expectedTime: expectedTimeStr };
+  };
+
   if (loading) {
     return (
       <View style={[styles.container, styles.center]}>
@@ -302,6 +329,7 @@ const TripView = () => {
             {stops.map((stop, index) => {
               const isPassed = index <= currentStopIndex;
               const isNext = index === currentStopIndex + 1;
+              const delayStatus = isNext ? getDelayStatus(stop.town.id) : null;
               
               return (
                 <View key={`${stop.id}-${index}`} style={styles.timelineItem}>
@@ -331,6 +359,14 @@ const TripView = () => {
                       ]}>
                         {stop.town.name}
                       </Text>
+                      {delayStatus && isNext && (
+                        <View style={{ marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Text style={{ color: '#AAAAAA', fontSize: 12 }}>{delayStatus.expectedTime}</Text>
+                          <View style={{ backgroundColor: delayStatus.color + '22', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                            <Text style={{ color: delayStatus.color, fontSize: 10, fontWeight: 'bold' }}>{delayStatus.text}</Text>
+                          </View>
+                        </View>
+                      )}
                       {isNext && (
                         <TouchableOpacity 
                           style={styles.markBtn} 
