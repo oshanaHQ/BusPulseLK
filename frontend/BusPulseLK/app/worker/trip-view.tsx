@@ -10,6 +10,7 @@ import {
   Alert,
   StatusBar,
   ScrollView,
+  AppState,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -17,6 +18,13 @@ import * as signalR from '@microsoft/signalr';
 import * as Location from 'expo-location';
 import { tripService, routeService, timetableService, API_BASE_URL } from '../../services/api';
 import FreeMap from '../../components/FreeMap';
+import {
+  showWorkerTripNotification,
+  showAutoWorkerNotification,
+  cancelTrackingNotification,
+  getWorkerLastAction,
+  clearWorkerLastAction,
+} from '../../services/notificationService';
 
 interface Stop {
   id: number;
@@ -55,8 +63,29 @@ const TripView = () => {
       if (locationSubscription.current) {
         locationSubscription.current.remove();
       }
+      cancelTrackingNotification();
     };
   }, []);
+
+  // Listen for AppState changes to sync background "Mark Passed" actions
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', async (nextAppState) => {
+      if (nextAppState === 'active') {
+        const lastAction = await getWorkerLastAction();
+        if (lastAction && stops.length > 0) {
+          const index = stops.findIndex(s => s.town.id === lastAction.townId);
+          if (index !== -1 && index > currentStopIndex) {
+            setCurrentStopIndex(index);
+          }
+          await clearWorkerLastAction();
+        }
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [stops, currentStopIndex]);
 
   // Start tracking only when tripId is available and mode is Automatic
   useEffect(() => {
@@ -102,6 +131,25 @@ const TripView = () => {
           }
         } else {
           setCurrentStopIndex(-1);
+        }
+
+        // Show appropriate notification on start
+        if (trackingMode === 'Automatic') {
+          await showAutoWorkerNotification(routeName as string, Number(busId), Number(timetableId));
+        } else {
+          // Manual mode
+          const nextIndex = tripData.status === 'Started' && tripData.lastPassedTownId
+            ? stopsList.findIndex(s => s.town.id === tripData.lastPassedTownId) + 1
+            : 0;
+          
+          if (nextIndex < stopsList.length) {
+            await showWorkerTripNotification(
+              routeName as string,
+              stopsList[nextIndex].town.name,
+              tripData.id,
+              stopsList[nextIndex].town.id
+            );
+          }
         }
       }
     } catch (error: any) {
@@ -200,6 +248,19 @@ const TripView = () => {
           timestamp: new Date().toISOString()
         });
       }
+
+      // Update the persistent notification with the new next stop
+      if (trackingMode !== 'Automatic' && index + 1 < stops.length) {
+        await showWorkerTripNotification(
+          routeName as string,
+          stops[index + 1].town.name,
+          tripId,
+          stops[index + 1].town.id
+        );
+      } else if (index + 1 >= stops.length) {
+        await cancelTrackingNotification();
+      }
+
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {
@@ -227,10 +288,11 @@ const TripView = () => {
                 'Trip Completed',
                 'Do you want to start the return journey?',
                 [
-                  { text: 'No, Exit', onPress: () => router.back() },
+                  { text: 'No, Exit', onPress: async () => { await cancelTrackingNotification(); router.back(); } },
                   { 
                     text: 'Yes, Start Return', 
-                    onPress: () => {
+                    onPress: async () => {
+                      await cancelTrackingNotification();
                       const nextReverse = !isReversed;
                       setIsReversed(nextReverse);
                       initTrip(nextReverse);

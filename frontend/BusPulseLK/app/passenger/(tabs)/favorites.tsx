@@ -13,6 +13,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { favoriteService } from '../../../services/api';
+import { getActiveTracking, cancelTrackingNotification, clearActiveTracking } from '../../../services/notificationService';
+import { Alert } from 'react-native';
 
 const FavoritesScreen = () => {
   const [favorites, setFavorites] = useState<any[]>([]);
@@ -41,10 +43,35 @@ const FavoritesScreen = () => {
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity 
       style={styles.card}
-      onPress={() => router.push({
-        pathname: '../live-tracking',
-        params: { busId: item.id }
-      })}
+      onPress={async () => {
+        const active = await getActiveTracking();
+        if (active && active.busId !== item.id) {
+          Alert.alert(
+            "Already Tracking",
+            `You are currently tracking ${active.busName}. Do you want to stop tracking it and track this bus instead?`,
+            [
+              { text: "Cancel", style: "cancel" },
+              { 
+                text: "Track New Bus", 
+                style: "destructive",
+                onPress: async () => {
+                  await cancelTrackingNotification();
+                  await clearActiveTracking();
+                  router.push({
+                    pathname: '../live-tracking',
+                    params: { busId: item.id }
+                  });
+                }
+              }
+            ]
+          );
+        } else {
+          router.push({
+            pathname: '../live-tracking',
+            params: { busId: item.id }
+          });
+        }
+      }}
     >
       <View style={styles.iconBox}>
         <Ionicons name="bus" size={26} color="#FF6200" />

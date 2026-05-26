@@ -11,12 +11,14 @@ import {
   StatusBar,
   Modal,
   Platform,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { searchService, townService, favoriteService } from '../../../services/api';
+import { getActiveTracking, cancelTrackingNotification, clearActiveTracking } from '../../../services/notificationService';
 
 type SearchMode = 'Name' | 'Destination' | 'Route';
 
@@ -61,11 +63,11 @@ const SearchScreen = () => {
     setLoading(true);
     try {
       let params: any = {};
-      if (mode === 'Name') params.name = query;
-      if (mode === 'Route') params.routeNumber = query;
+      if (mode === 'Name' && query) params.name = query;
+      if (mode === 'Route' && query) params.routeNumber = query;
       if (mode === 'Destination') {
-        params.originTownId = originId;
-        params.destinationTownId = destId;
+        if (originId) params.originTownId = originId;
+        if (destId) params.destinationTownId = destId;
       }
       if (startTime) params.startTime = startTime;
 
@@ -114,10 +116,35 @@ const SearchScreen = () => {
       <View style={styles.cardActions}>
         <TouchableOpacity 
           style={styles.trackBtn}
-          onPress={() => router.push({
-            pathname: '/passenger/live-tracking',
-            params: { busId: item.bus.id, timetableId: item.timetableId }
-          })}
+          onPress={async () => {
+            const active = await getActiveTracking();
+            if (active && active.busId !== item.bus.id) {
+              Alert.alert(
+                "Already Tracking",
+                `You are currently tracking ${active.busName}. Do you want to stop tracking it and track this bus instead?`,
+                [
+                  { text: "Cancel", style: "cancel" },
+                  { 
+                    text: "Track New Bus", 
+                    style: "destructive",
+                    onPress: async () => {
+                      await cancelTrackingNotification();
+                      await clearActiveTracking();
+                      router.push({
+                        pathname: '/passenger/live-tracking',
+                        params: { busId: item.bus.id, timetableId: item.timetableId }
+                      });
+                    }
+                  }
+                ]
+              );
+            } else {
+              router.push({
+                pathname: '/passenger/live-tracking',
+                params: { busId: item.bus.id, timetableId: item.timetableId }
+              });
+            }
+          }}
         >
           <Ionicons name="map-outline" size={18} color="#FFFFFF" />
           <Text style={styles.trackBtnText}>Live Track</Text>

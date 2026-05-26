@@ -18,6 +18,13 @@ import { router, useLocalSearchParams } from 'expo-router';
 import * as signalR from '@microsoft/signalr';
 import { tripService, timetableService, ratingService, reportService, API_BASE_URL } from '../../services/api';
 import FreeMap from '../../components/FreeMap';
+import {
+  setActiveTracking,
+  clearActiveTracking,
+  showPassengerTrackingNotification,
+  showAutoPassengerNotification,
+  cancelTrackingNotification,
+} from '../../services/notificationService';
 
 const LiveTrackingScreen = () => {
   const { busId, timetableId } = useLocalSearchParams();
@@ -40,6 +47,9 @@ const LiveTrackingScreen = () => {
     setupSignalR();
     return () => {
       if (connectionRef.current) connectionRef.current.stop();
+      // Cancel notification and clear tracking session when leaving
+      cancelTrackingNotification();
+      clearActiveTracking();
     };
   }, []);
 
@@ -51,9 +61,10 @@ const LiveTrackingScreen = () => {
       
       // Load timetable: use param if available, otherwise use the trip's timetableId
       const ttId = timetableId ? Number(timetableId) : data.timetableId;
+      let ttData: any = null;
       if (ttId) {
         try {
-          const ttData = await timetableService.getById(ttId);
+          ttData = await timetableService.getById(ttId);
           setTimetable(ttData);
         } catch (err) {
           console.log('Error fetching timetable', err);
@@ -61,7 +72,7 @@ const LiveTrackingScreen = () => {
       }
       
       // Populate status immediately from initial data
-      setStatus({
+      const initialStatus = {
         lastStopId: data.lastPassedTownId,
         lastStopName: data.lastPassedTownName || 'Starting Point',
         nextStopId: data.nextTownId,
@@ -71,7 +82,22 @@ const LiveTrackingScreen = () => {
         longitude: data.currentLongitude,
         trackingMode: data.trackingMode,
         isReturnJourney: data.isReturnJourney || false,
-      });
+      };
+      setStatus(initialStatus);
+
+      // Save tracking session and show initial notification
+      const busName = (ttData as any)?.bus?.name || (ttData as any)?.bus?.numberPlate || `Bus ${busId}`;
+      await setActiveTracking({ busId: Number(busId), timetableId: ttId, busName });
+
+      if (data.trackingMode === 'Automatic') {
+        await showAutoPassengerNotification(busName, Number(busId), ttId || 0);
+      } else {
+        await showPassengerTrackingNotification(
+          busName,
+          initialStatus.nextStopName,
+          initialStatus.progressPercent,
+        );
+      }
     } catch (error) {
       console.log('No active trip found');
     } finally {
@@ -88,10 +114,22 @@ const LiveTrackingScreen = () => {
       .withAutomaticReconnect()
       .build();
 
-    connection.on('ReceiveBusStatus', (updateBusId, busStatus) => {
+    connection.on('ReceiveBusStatus', async (updateBusId, busStatus) => {
       // backend now sends (busId, status)
       if (updateBusId.toString() === busId?.toString()) {
-        setStatus((prev: any) => ({ ...prev, ...busStatus }));
+        setStatus((prev: any) => {
+          const next = { ...prev, ...busStatus };
+          // Update notification with latest stop info (manual mode only)
+          if (prev?.trackingMode !== 'Automatic') {
+            const busName = timetable?.bus?.name || timetable?.bus?.numberPlate || `Bus ${busId}`;
+            showPassengerTrackingNotification(
+              busName,
+              next.nextStopName || '...',
+              next.progressPercent || 0,
+            );
+          }
+          return next;
+        });
       }
     });
 

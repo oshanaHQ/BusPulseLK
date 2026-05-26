@@ -2,7 +2,20 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, LogBox } from 'react-native';
+
+LogBox.ignoreLogs([
+  'expo-notifications: Android Push notifications',
+  'SafeAreaView has been deprecated',
+]);
+import * as Notifications from 'expo-notifications';
+import {
+  setupNotifications,
+  requestPermissions,
+  ACTION_MARK_PASSED,
+  setWorkerLastAction,
+} from '../services/notificationService';
+import { tripService } from '../services/api';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -71,6 +84,28 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    // Setup notification channels, categories, and permissions
+    setupNotifications().then(() => requestPermissions());
+
+    // Handle notification action responses (e.g. worker taps "Mark Passed")
+    const sub = Notifications.addNotificationResponseReceivedListener(async (response) => {
+      const { actionIdentifier, notification } = response;
+      const data = notification.request.content.data as any;
+
+      if (actionIdentifier === ACTION_MARK_PASSED && data?.tripId && data?.nextStopTownId) {
+        try {
+          await tripService.updateProgress(Number(data.tripId), Number(data.nextStopTownId));
+          await setWorkerLastAction({ townId: Number(data.nextStopTownId), timestamp: Date.now() });
+        } catch (e) {
+          console.log('Error marking stop from notification:', e);
+        }
+      }
+    });
+
+    return () => sub.remove();
+  }, []);
 
   return (
     <AuthProvider>

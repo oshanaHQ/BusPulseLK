@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '../../../context/AuthContext';
 import { favoriteService, regularPassengerService } from '../../../services/api';
+import { getActiveTracking, cancelTrackingNotification, clearActiveTracking } from '../../../services/notificationService';
 
 const PassengerDashboard = () => {
   const { user, logout } = useAuth();
@@ -54,10 +55,35 @@ const PassengerDashboard = () => {
     <TouchableOpacity 
       key={item.id}
       style={styles.favCard}
-      onPress={() => router.push({
-        pathname: '/passenger/live-tracking',
-        params: { busId: item.id }
-      })}
+      onPress={async () => {
+        const active = await getActiveTracking();
+        if (active && active.busId !== item.id) {
+          Alert.alert(
+            "Already Tracking",
+            `You are currently tracking ${active.busName}. Do you want to stop tracking it and track this bus instead?`,
+            [
+              { text: "Cancel", style: "cancel" },
+              { 
+                text: "Track New Bus", 
+                style: "destructive",
+                onPress: async () => {
+                  await cancelTrackingNotification();
+                  await clearActiveTracking();
+                  router.push({
+                    pathname: '/passenger/live-tracking',
+                    params: { busId: item.id }
+                  });
+                }
+              }
+            ]
+          );
+        } else {
+          router.push({
+            pathname: '/passenger/live-tracking',
+            params: { busId: item.id }
+          });
+        }
+      }}
     >
       <View style={styles.favIconBox}>
         <Ionicons name="bus" size={24} color="#FF6200" />
@@ -160,12 +186,36 @@ const PassengerDashboard = () => {
 
         <TouchableOpacity 
           style={styles.liveHero}
-          onPress={() => {
+          onPress={async () => {
             if (favorites.length > 0) {
-              router.push({
-                pathname: '/passenger/live-tracking',
-                params: { busId: favorites[0].id }
-              });
+              const targetBusId = favorites[0].id;
+              const active = await getActiveTracking();
+              if (active && active.busId !== targetBusId) {
+                Alert.alert(
+                  "Already Tracking",
+                  `You are currently tracking ${active.busName}. Do you want to stop tracking it and track this bus instead?`,
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    { 
+                      text: "Track New Bus", 
+                      style: "destructive",
+                      onPress: async () => {
+                        await cancelTrackingNotification();
+                        await clearActiveTracking();
+                        router.push({
+                          pathname: '/passenger/live-tracking',
+                          params: { busId: targetBusId }
+                        });
+                      }
+                    }
+                  ]
+                );
+              } else {
+                router.push({
+                  pathname: '/passenger/live-tracking',
+                  params: { busId: targetBusId }
+                });
+              }
             } else {
               router.push('/passenger/search');
             }
