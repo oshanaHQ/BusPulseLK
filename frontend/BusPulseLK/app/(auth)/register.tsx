@@ -22,7 +22,9 @@ const RegisterScreen = () => {
   const [fullName, setFullName] = useState('');
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState<'Passenger' | 'Bus Owner' | 'Conductor/Driver' | null>(null);
   const [loading, setLoading] = useState(false);
   const auth = useAuth();
@@ -34,8 +36,13 @@ const RegisterScreen = () => {
   };
 
   const handleRegister = async () => {
-    if (!fullName || !emailOrPhone || !password || !selectedRole) {
+    if (!fullName || !emailOrPhone || !password || !confirmPassword || !selectedRole) {
       Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
       return;
     }
 
@@ -94,6 +101,16 @@ const RegisterScreen = () => {
               <Text style={styles.subtitle}>Join BusPulse LK today.</Text>
             </View>
 
+            <View style={styles.tabContainer}>
+              <TouchableOpacity style={styles.tab} onPress={goToLogin}>
+                <Text style={styles.tabText}>Login</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.tab, styles.activeTab]}>
+                <Text style={styles.tabTextActive}>Register</Text>
+              </TouchableOpacity>
+            </View>
+
             <View style={styles.inputWrapper}>
               <Text style={styles.label}>Full Name</Text>
               <View style={styles.inputContainer}>
@@ -141,6 +158,30 @@ const RegisterScreen = () => {
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                   <Ionicons
                     name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                    size={20}
+                    color="#888"
+                    style={styles.eyeIcon}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <Text style={styles.label}>Confirm Password</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="lock-closed-outline" size={20} color="#888" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Confirm your password"
+                  placeholderTextColor="#666"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                  <Ionicons
+                    name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
                     size={20}
                     color="#888"
                     style={styles.eyeIcon}
@@ -251,6 +292,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#AAAAAA',
     fontWeight: '500',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#111111',
+    borderRadius: 30,
+    padding: 4,
+    marginBottom: 32,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 26,
+  },
+  activeTab: {
+    backgroundColor: '#222222',
+  },
+  tabText: {
+    color: '#888888',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  tabTextActive: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
   inputWrapper: {
     marginBottom: 20,

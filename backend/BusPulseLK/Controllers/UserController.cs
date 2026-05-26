@@ -27,7 +27,14 @@ namespace BusPulseLK.Controllers
         public async Task<IActionResult> Register(RegisterUserDto dto)
         {
             if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
-                return BadRequest(new { message = "Email already exists." });
+                return BadRequest(new { message = "This email is already registered. Users can only sign up once per email." });
+
+            if (await _context.Users.AnyAsync(u => u.FullName.ToLower() == dto.FullName.ToLower()))
+            {
+                var random = new Random();
+                string suggestedName = $"{dto.FullName}{random.Next(10, 999)}";
+                return BadRequest(new { message = $"Username '{dto.FullName}' is already taken. Please try another name, for example: '{suggestedName}'" });
+            }
 
             var allowedRoles = new[] { "Admin", "BusOwner", "Driver", "Conductor", "Passenger" };
             if (!allowedRoles.Contains(dto.Role))
