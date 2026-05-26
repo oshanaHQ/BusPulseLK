@@ -39,6 +39,7 @@ const LiveTrackingScreen = () => {
   const [stars, setStars] = useState(0);
   const [comment, setComment] = useState('');
   const [reportDesc, setReportDesc] = useState('');
+  const [isAnonymous, setIsAnonymous] = useState(false);
 
   const connectionRef = useRef<signalR.HubConnection | null>(null);
 
@@ -82,6 +83,9 @@ const LiveTrackingScreen = () => {
         longitude: data.currentLongitude,
         trackingMode: data.trackingMode,
         isReturnJourney: data.isReturnJourney || false,
+        isEmergency: data.isEmergency || false,
+        emergencyTopic: data.emergencyTopic,
+        emergencyRoute: data.emergencyRoute,
       };
       setStatus(initialStatus);
 
@@ -155,9 +159,16 @@ const LiveTrackingScreen = () => {
 
   const submitReport = async () => {
     try {
-      await reportService.submit({ busId: Number(busId), tripId: trip?.id, description: reportDesc });
+      await reportService.submit({
+        busId: Number(busId),
+        tripId: trip?.id,
+        description: reportDesc,
+        isAnonymous,
+      });
       Alert.alert('Success', 'Your report has been submitted.');
       setReportModal(false);
+      setReportDesc('');
+      setIsAnonymous(false);
     } catch (error: any) {
       Alert.alert('Error', error.message);
     }
@@ -199,69 +210,101 @@ const LiveTrackingScreen = () => {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Automatic Mode View */}
-        {status?.trackingMode === 'Automatic' && (
+        {/* Emergency Alert View */}
+        {status?.isEmergency ? (
+          <View style={styles.emergencyCard}>
+            <View style={styles.emergencyIconHeader}>
+              <Ionicons name="warning" size={48} color="#EF4444" />
+              <Text style={styles.emergencyTitle}>EMERGENCY ALERT</Text>
+            </View>
+            <Text style={styles.emergencySub}>Normal service has been temporarily suspended.</Text>
+            
+            <View style={styles.emergencyDivider} />
+            
+            <View style={styles.emergencySection}>
+              <Text style={styles.emergencyLabel}>Topic / Reason</Text>
+              <Text style={styles.emergencyValue}>{status.emergencyTopic || 'Deviation from normal route'}</Text>
+            </View>
+
+            <View style={styles.emergencySection}>
+              <Text style={styles.emergencyLabel}>Temporary Route / Details</Text>
+              <Text style={styles.emergencyValue}>{status.emergencyRoute || 'Please contact dispatch or check announcements.'}</Text>
+            </View>
+
+            <View style={styles.emergencyNoticeBox}>
+              <Ionicons name="information-circle-outline" size={16} color="#F59E0B" />
+              <Text style={styles.emergencyNoticeText}>
+                Live tracking progress is temporarily suspended until the emergency route is cleared.
+              </Text>
+            </View>
+          </View>
+        ) : (
           <>
-            {status?.latitude && status?.longitude ? (
-              <View style={styles.mapContainer}>
-                <FreeMap 
-                  latitude={status.latitude} 
-                  longitude={status.longitude} 
-                  zoom={15} 
-                />
+            {/* Automatic Mode View */}
+            {status?.trackingMode === 'Automatic' && (
+              <>
+                {status?.latitude && status?.longitude ? (
+                  <View style={styles.mapContainer}>
+                    <FreeMap 
+                      latitude={status.latitude} 
+                      longitude={status.longitude} 
+                      zoom={15} 
+                    />
+                  </View>
+                ) : (
+                  <View style={[styles.mapContainer, styles.mapFallback]}>
+                    <Ionicons name="map-outline" size={48} color="#333" />
+                    <Text style={styles.mapFallbackText}>Waiting for GPS signal...</Text>
+                  </View>
+                )}
+              </>
+            )}
+
+            {/* Manual Mode View */}
+            {status?.trackingMode === 'Manual' && (
+              <View style={styles.statusCard}>
+                <View style={styles.busIconContainer}>
+                  <Ionicons name="bus" size={40} color="#FF6200" />
+                </View>
+                <Text style={styles.statusLabel}>Current Location</Text>
+                <Text style={styles.locationName}>{status?.lastStopName || 'Starting Point'}</Text>
+                
+                <View style={styles.progressContainer}>
+                  <View style={styles.progressBar}>
+                    <View style={[styles.progressFill, { width: `${status?.progressPercent || 0}%` }]} />
+                  </View>
+                  <View style={styles.progressLabels}>
+                    <Text style={styles.progressText}>Progress</Text>
+                    <Text style={styles.progressText}>{Math.round(status?.progressPercent || 0)}%</Text>
+                  </View>
+                </View>
+
+                <View style={styles.nextStopBox}>
+                  <Text style={styles.nextLabel}>Next Stop</Text>
+                  <Text style={styles.nextValue}>{status?.nextStopName || '...'}</Text>
+                  {delayStatus && (
+                    <View style={{ marginTop: 10, alignItems: 'center' }}>
+                      <Text style={{ color: '#AAAAAA', fontSize: 12 }}>Normal Time: {delayStatus.expectedTime}</Text>
+                      <View style={{ backgroundColor: delayStatus.color + '22', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginTop: 4 }}>
+                        <Text style={{ color: delayStatus.color, fontWeight: 'bold', fontSize: 14 }}>{delayStatus.text}</Text>
+                      </View>
+                    </View>
+                  )}
+                </View>
               </View>
-            ) : (
-              <View style={[styles.mapContainer, styles.mapFallback]}>
-                <Ionicons name="map-outline" size={48} color="#333" />
-                <Text style={styles.mapFallbackText}>Waiting for GPS signal...</Text>
+            )}
+
+            {/* No Active Trip fallback */}
+            {!status && (
+              <View style={styles.statusCard}>
+                <Ionicons name="alert-circle-outline" size={48} color="#FF6200" />
+                <Text style={[styles.locationName, { marginTop: 15 }]}>No Active Trip</Text>
+                <Text style={{ color: '#666', marginTop: 5, textAlign: 'center', fontSize: 14 }}>
+                  This bus is not currently running on any active schedule.
+                </Text>
               </View>
             )}
           </>
-        )}
-
-        {/* Manual Mode View */}
-        {status?.trackingMode === 'Manual' && (
-          <View style={styles.statusCard}>
-            <View style={styles.busIconContainer}>
-              <Ionicons name="bus" size={40} color="#FF6200" />
-            </View>
-            <Text style={styles.statusLabel}>Current Location</Text>
-            <Text style={styles.locationName}>{status?.lastStopName || 'Starting Point'}</Text>
-            
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: `${status?.progressPercent || 0}%` }]} />
-              </View>
-              <View style={styles.progressLabels}>
-                <Text style={styles.progressText}>Progress</Text>
-                <Text style={styles.progressText}>{Math.round(status?.progressPercent || 0)}%</Text>
-              </View>
-            </View>
-
-            <View style={styles.nextStopBox}>
-              <Text style={styles.nextLabel}>Next Stop</Text>
-              <Text style={styles.nextValue}>{status?.nextStopName || '...'}</Text>
-              {delayStatus && (
-                <View style={{ marginTop: 10, alignItems: 'center' }}>
-                  <Text style={{ color: '#AAAAAA', fontSize: 12 }}>Normal Time: {delayStatus.expectedTime}</Text>
-                  <View style={{ backgroundColor: delayStatus.color + '22', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginTop: 4 }}>
-                    <Text style={{ color: delayStatus.color, fontWeight: 'bold', fontSize: 14 }}>{delayStatus.text}</Text>
-                  </View>
-                </View>
-              )}
-            </View>
-          </View>
-        )}
-
-        {/* No Active Trip fallback */}
-        {!status && (
-          <View style={styles.statusCard}>
-            <Ionicons name="alert-circle-outline" size={48} color="#FF6200" />
-            <Text style={[styles.locationName, { marginTop: 15 }]}>No Active Trip</Text>
-            <Text style={{ color: '#666', marginTop: 5, textAlign: 'center', fontSize: 14 }}>
-              This bus is not currently running on any active schedule.
-            </Text>
-          </View>
         )}
 
         {/* Action Buttons (Rating/Report) */}
@@ -322,6 +365,19 @@ const LiveTrackingScreen = () => {
               value={reportDesc}
               onChangeText={setReportDesc}
             />
+            
+            <TouchableOpacity 
+              style={styles.anonToggleRow} 
+              onPress={() => setIsAnonymous(!isAnonymous)}
+            >
+              <Ionicons 
+                name={isAnonymous ? "checkbox" : "square-outline"} 
+                size={22} 
+                color={isAnonymous ? "#D32F2F" : "#666"} 
+              />
+              <Text style={styles.anonToggleText}>Submit Anonymously</Text>
+            </TouchableOpacity>
+
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setReportModal(false)}>
                 <Text style={styles.cancelText}>Cancel</Text>
@@ -375,6 +431,18 @@ const styles = StyleSheet.create({
   mapContainer: { width: '100%', height: 300, borderRadius: 20, overflow: 'hidden', marginTop: 20, borderWidth: 1, borderColor: '#222' },
   mapFallback: { backgroundColor: '#111', justifyContent: 'center', alignItems: 'center', gap: 10 },
   mapFallbackText: { color: '#666', fontSize: 14, fontWeight: 'bold' },
+  anonToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 15, paddingVertical: 5 },
+  anonToggleText: { color: '#888', fontSize: 14 },
+  emergencyCard: { backgroundColor: '#1C1010', borderRadius: 20, padding: 25, alignItems: 'center', borderWidth: 1, borderColor: '#EF444455' },
+  emergencyIconHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+  emergencyTitle: { color: '#EF4444', fontSize: 22, fontWeight: 'bold' },
+  emergencySub: { color: '#AAA', fontSize: 13, textAlign: 'center', marginBottom: 15 },
+  emergencyDivider: { width: '100%', height: 1, backgroundColor: '#EF444422', marginBottom: 15 },
+  emergencySection: { width: '100%', marginBottom: 15 },
+  emergencyLabel: { color: '#666', fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 4 },
+  emergencyValue: { color: '#FFF', fontSize: 16, lineHeight: 22 },
+  emergencyNoticeBox: { flexDirection: 'row', gap: 8, backgroundColor: '#F59E0B11', padding: 12, borderRadius: 10, marginTop: 10 },
+  emergencyNoticeText: { flex: 1, color: '#F59E0B', fontSize: 12, lineHeight: 16 },
 });
 
 export default LiveTrackingScreen;

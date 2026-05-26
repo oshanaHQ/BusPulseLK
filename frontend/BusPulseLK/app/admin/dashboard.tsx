@@ -78,6 +78,14 @@ const AdminDashboard = () => {
             <Ionicons name="map-outline" size={40} color="#FF6200" />
             <Text style={styles.cardText}>Manage Cities</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.card}
+            onPress={() => router.push('./bus-ratings')}
+          >
+            <Ionicons name="star-outline" size={40} color="#FF6200" />
+            <Text style={styles.cardText}>Bus Ratings</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Quick Statistics */}

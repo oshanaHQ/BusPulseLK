@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { busService } from '../../services/api';
+import RatingsModal from '../../components/RatingsModal';
 
 interface Bus {
   id: number;
@@ -31,6 +32,11 @@ const BusOwnerDashboard = () => {
   const [buses, setBuses] = useState<Bus[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Ratings Modal state
+  const [ratingsModalVisible, setRatingsModalVisible] = useState(false);
+  const [selectedBusId, setSelectedBusId] = useState<number | null>(null);
+  const [selectedBusName, setSelectedBusName] = useState<string>('');
 
   useEffect(() => {
     fetchBuses();
@@ -62,6 +68,12 @@ const BusOwnerDashboard = () => {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <RatingsModal
+        visible={ratingsModalVisible}
+        onClose={() => setRatingsModalVisible(false)}
+        busId={selectedBusId || 0}
+        busName={selectedBusName}
+      />
       <StatusBar backgroundColor="#000000" barStyle="light-content" />
       <ScrollView 
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 + insets.bottom }]}
@@ -138,16 +150,41 @@ const BusOwnerDashboard = () => {
                   <Text style={styles.busName}>{bus.numberPlate}</Text>
                   <Text style={styles.busRoute}>{bus.name || 'No Name'}</Text>
                   <Text style={styles.driverText}>Driver: {bus.driver?.fullName || 'Not Assigned'}</Text>
-                  <View style={[
-                    styles.statusBadge, 
-                    { backgroundColor: bus.isActive ? '#2E7D3222' : '#FF620022' }
-                  ]}>
-                    <Text style={[
-                      styles.statusText, 
-                      { color: bus.isActive ? '#2E7D32' : '#FF6200' }
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={[
+                      styles.statusBadge, 
+                      { backgroundColor: bus.isActive ? '#2E7D3222' : '#FF620022' }
                     ]}>
-                      {bus.isActive ? 'Active' : 'Pending Approval'}
-                    </Text>
+                      <Text style={[
+                        styles.statusText, 
+                        { color: bus.isActive ? '#2E7D32' : '#FF6200' }
+                      ]}>
+                        {bus.isActive ? 'Active' : 'Pending Approval'}
+                      </Text>
+                    </View>
+                    
+                    <TouchableOpacity
+                      style={styles.ratingsBadge}
+                      onPress={() => {
+                        setSelectedBusId(bus.id);
+                        setSelectedBusName(bus.name || bus.numberPlate);
+                        setRatingsModalVisible(true);
+                      }}
+                    >
+                      <Ionicons name="star" size={12} color="#FF6200" />
+                      <Text style={styles.ratingsBadgeText}>Ratings</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.ratingsBadge}
+                      onPress={() => router.push({ 
+                        pathname: '/owner/announcements' as any, 
+                        params: { busId: bus.id, busName: bus.name || bus.numberPlate } 
+                      })}
+                    >
+                      <Ionicons name="megaphone" size={12} color="#FF6200" />
+                      <Text style={styles.ratingsBadgeText}>Announce</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
                 <TouchableOpacity onPress={() => router.push('./manage-buses')}>
@@ -174,7 +211,10 @@ const BusOwnerDashboard = () => {
           <Text style={styles.tabLabel}>Buses</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem}>
+        <TouchableOpacity 
+          style={styles.tabItem}
+          onPress={() => router.push('./issue-reports')}
+        >
           <Ionicons name="document-text-outline" size={26} color="#AAAAAA" />
           <Text style={styles.tabLabel}>Reports</Text>
         </TouchableOpacity>
@@ -304,6 +344,22 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '600',
+  },
+  ratingsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FF620011',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#FF620033',
+  },
+  ratingsBadgeText: {
+    color: '#FF6200',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   bottomTab: {
     flexDirection: 'row',

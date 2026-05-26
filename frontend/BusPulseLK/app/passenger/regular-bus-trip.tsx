@@ -137,31 +137,63 @@ const RegularBusTrip = () => {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchTrip} tintColor="#FF6200" />}
         >
-          {/* Status Card */}
-          <View style={styles.statusCard}>
-            <View style={styles.statusRow}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>LIVE</Text>
-              <Text style={styles.modeText}>{tripStatus.trackingMode} Mode</Text>
-            </View>
-            <Text style={styles.progressLabel}>Progress</Text>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${Math.min(tripStatus.progressPercent ?? 0, 100)}%` }]} />
-            </View>
-            <Text style={styles.progressPercent}>{Math.round(tripStatus.progressPercent ?? 0)}% complete</Text>
-            {tripStatus.lastPassedTownName && (
-              <Text style={styles.lastPassed}>Last passed: {tripStatus.lastPassedTownName}</Text>
-            )}
-            {tripStatus.nextTownName && (
-              <Text style={styles.nextTown}>Next stop: {tripStatus.nextTownName}</Text>
-            )}
-          </View>
+          {/* Emergency Alert View */}
+          {tripStatus.isEmergency ? (
+            <View style={styles.emergencyCard}>
+              <View style={styles.emergencyIconHeader}>
+                <Ionicons name="warning" size={48} color="#EF4444" />
+                <Text style={styles.emergencyTitle}>EMERGENCY ALERT</Text>
+              </View>
+              <Text style={styles.emergencySub}>Normal service has been temporarily suspended.</Text>
+              
+              <View style={styles.emergencyDivider} />
+              
+              <View style={styles.emergencySection}>
+                <Text style={styles.emergencyLabel}>Topic / Reason</Text>
+                <Text style={styles.emergencyValue}>{tripStatus.emergencyTopic || 'Deviation from normal route'}</Text>
+              </View>
 
-          {/* Info Banner */}
-          <View style={styles.infoBanner}>
-            <Ionicons name="star" size={16} color="#FF6200" />
-            <Text style={styles.infoText}>As a regular passenger, you can mark stops as the bus passes them.</Text>
-          </View>
+              <View style={styles.emergencySection}>
+                <Text style={styles.emergencyLabel}>Temporary Route / Details</Text>
+                <Text style={styles.emergencyValue}>{tripStatus.emergencyRoute || 'Please contact dispatch or check announcements.'}</Text>
+              </View>
+
+              <View style={styles.emergencyNoticeBox}>
+                <Ionicons name="information-circle-outline" size={16} color="#F59E0B" />
+                <Text style={styles.emergencyNoticeText}>
+                  This bus is currently deviating from the normal route. Standard scheduling is paused.
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <>
+              {/* Status Card */}
+              <View style={styles.statusCard}>
+                <View style={styles.statusRow}>
+                  <View style={styles.liveDot} />
+                  <Text style={styles.liveText}>LIVE</Text>
+                  <Text style={styles.modeText}>{tripStatus.trackingMode} Mode</Text>
+                </View>
+                <Text style={styles.progressLabel}>Progress</Text>
+                <View style={styles.progressBar}>
+                  <View style={[styles.progressFill, { width: `${Math.min(tripStatus.progressPercent ?? 0, 100)}%` }]} />
+                </View>
+                <Text style={styles.progressPercent}>{Math.round(tripStatus.progressPercent ?? 0)}% complete</Text>
+                {tripStatus.lastPassedTownName && (
+                  <Text style={styles.lastPassed}>Last passed: {tripStatus.lastPassedTownName}</Text>
+                )}
+                {tripStatus.nextTownName && (
+                  <Text style={styles.nextTown}>Next stop: {tripStatus.nextTownName}</Text>
+                )}
+              </View>
+
+              {/* Info Banner */}
+              <View style={styles.infoBanner}>
+                <Ionicons name="star" size={16} color="#FF6200" />
+                <Text style={styles.infoText}>As a regular passenger, you can mark stops as the bus passes them.</Text>
+              </View>
+            </>
+          )}
 
           {/* Stops */}
           <Text style={styles.sectionTitle}>Route Stops</Text>
@@ -252,6 +284,16 @@ const styles = StyleSheet.create({
   stopName: { color: '#CCC', fontSize: 15, fontWeight: '500' },
   stopRole: { color: '#FF9800', fontSize: 10, fontWeight: 'bold', marginTop: 2 },
   markBtn: { padding: 6, borderRadius: 8 },
+  emergencyCard: { backgroundColor: '#1C1010', borderRadius: 20, padding: 25, alignItems: 'center', borderWidth: 1, borderColor: '#EF444455', marginBottom: 20 },
+  emergencyIconHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+  emergencyTitle: { color: '#EF4444', fontSize: 22, fontWeight: 'bold' },
+  emergencySub: { color: '#AAA', fontSize: 13, textAlign: 'center', marginBottom: 15 },
+  emergencyDivider: { width: '100%', height: 1, backgroundColor: '#EF444422', marginBottom: 15 },
+  emergencySection: { width: '100%', marginBottom: 15 },
+  emergencyLabel: { color: '#666', fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 4 },
+  emergencyValue: { color: '#FFF', fontSize: 16, lineHeight: 22 },
+  emergencyNoticeBox: { flexDirection: 'row', gap: 8, backgroundColor: '#F59E0B11', padding: 12, borderRadius: 10, marginTop: 10 },
+  emergencyNoticeText: { flex: 1, color: '#F59E0B', fontSize: 12, lineHeight: 16 },
 });
 
 export default RegularBusTrip;

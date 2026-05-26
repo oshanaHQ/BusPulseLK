@@ -157,7 +157,10 @@ const StaffDashboard = () => {
               <Ionicons name="calendar-outline" size={40} color="#FF6200" />
               <Text style={styles.cardText}>Schedule</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.card}>
+            <TouchableOpacity 
+              style={styles.card}
+              onPress={() => bus && router.push({ pathname: '/worker/announcements' as any, params: { busId: bus.id } })}
+            >
               <Ionicons name="megaphone-outline" size={40} color="#FF6200" />
               <Text style={styles.cardText}>Announce</Text>
             </TouchableOpacity>
@@ -213,7 +216,10 @@ const StaffDashboard = () => {
           <Text style={styles.tabLabel}>Schedule</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem}>
+        <TouchableOpacity 
+          style={styles.tabItem}
+          onPress={() => bus && router.push({ pathname: '/worker/announcements' as any, params: { busId: bus.id } })}
+        >
           <Ionicons name="megaphone-outline" size={26} color="#AAAAAA" />
           <Text style={styles.tabLabel}>Announce</Text>
         </TouchableOpacity>

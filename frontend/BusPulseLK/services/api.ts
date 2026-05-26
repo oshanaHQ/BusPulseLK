@@ -258,16 +258,6 @@ export const favoriteService = {
   toggle: (busId: number) => apiPost(`/favorites/toggle/${busId}`, {}),
 };
 
-export const ratingService = {
-  submit: (data: { busId: number; stars: number; comment?: string }) =>
-    apiPost('/ratings', data),
-};
-
-export const reportService = {
-  submit: (data: { busId: number; tripId?: number; description: string }) =>
-    apiPost('/issueReports', data),
-};
-
 // ── Route Request service ─────────────────────────────────────────────────────
 
 export const routeRequestService = {
@@ -296,4 +286,42 @@ export const regularPassengerService = {
   reject: (id: number) => apiPost(`/regularpassengers/${id}/reject`, {}),
   // Passenger
   getMyStatus: () => apiGet('/regularpassengers/my-status'),
+};
+
+// ── Emergency service ─────────────────────────────────────────────────────────
+
+export const emergencyService = {
+  start: (tripId: number, topic: string, emergencyRoute: string) =>
+    apiPost(`/trips/${tripId}/emergency`, { topic, emergencyRoute }),
+  end: (tripId: number) => apiDelete(`/trips/${tripId}/emergency`),
+};
+
+// ── Announcement service ──────────────────────────────────────────────────────
+
+export const announcementService = {
+  getFeed: () => apiGet('/announcements/my-feed'),
+  getByBus: (busId: number) => apiGet(`/announcements/bus/${busId}`),
+  create: (data: { busId: number; title: string; message: string; type?: string; tripId?: number }) =>
+    apiPost('/announcements', data),
+  update: (id: number, data: { title?: string; message?: string }) =>
+    apiPut(`/announcements/${id}`, data),
+  remove: (id: number) => apiDelete(`/announcements/${id}`),
+};
+
+// ── Rating service (extended) ─────────────────────────────────────────────────
+
+export const ratingService = {
+  submit: (data: { busId: number; stars: number; comment?: string }) =>
+    apiPost('/ratings', data),
+  getByBus: (busId: number) => apiGet(`/ratings/bus/${busId}`),
+};
+
+// ── Issue Report service (extended) ──────────────────────────────────────────
+
+export const reportService = {
+  submit: (data: { busId: number; tripId?: number; description: string; isAnonymous?: boolean }) =>
+    apiPost('/issueReports', data),
+  getMyBusIssues: () => apiGet('/issueReports/my-buses'),
+  updateStatus: (id: number, status: string) =>
+    apiPut(`/issueReports/${id}/status`, { status }),
 };

@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { searchService, townService, favoriteService } from '../../../services/api';
 import { getActiveTracking, cancelTrackingNotification, clearActiveTracking } from '../../../services/notificationService';
+import RatingsModal from '../../../components/RatingsModal';
 
 type SearchMode = 'Name' | 'Destination' | 'Route';
 
@@ -37,6 +38,11 @@ const SearchScreen = () => {
   const [towns, setTowns] = useState<any[]>([]);
   const [townModalVisible, setTownModalVisible] = useState(false);
   const [selectingFor, setSelectingFor] = useState<'origin' | 'destination'>('origin');
+
+  // Ratings Modal State
+  const [ratingsModalVisible, setRatingsModalVisible] = useState(false);
+  const [selectedBusId, setSelectedBusId] = useState<number | null>(null);
+  const [selectedBusName, setSelectedBusName] = useState<string>('');
 
   useEffect(() => {
     loadTowns();
@@ -149,12 +155,30 @@ const SearchScreen = () => {
           <Ionicons name="map-outline" size={18} color="#FFFFFF" />
           <Text style={styles.trackBtnText}>Live Track</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.trackBtn, { marginTop: 8, backgroundColor: '#1A1A1A' }]}
+          onPress={() => {
+            setSelectedBusId(item.bus.id);
+            setSelectedBusName(item.bus.name || item.bus.numberPlate);
+            setRatingsModalVisible(true);
+          }}
+        >
+          <Ionicons name="star-outline" size={18} color="#FF6200" />
+          <Text style={[styles.trackBtnText, { color: '#FF6200' }]}>View Ratings</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <RatingsModal
+        visible={ratingsModalVisible}
+        onClose={() => setRatingsModalVisible(false)}
+        busId={selectedBusId || 0}
+        busName={selectedBusName}
+      />
       <StatusBar barStyle="light-content" />
       
       <View style={styles.header}>

@@ -11,12 +11,14 @@ import {
   StatusBar,
   ScrollView,
   AppState,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as signalR from '@microsoft/signalr';
 import * as Location from 'expo-location';
-import { tripService, routeService, timetableService, API_BASE_URL } from '../../services/api';
+import { tripService, routeService, timetableService, emergencyService, API_BASE_URL } from '../../services/api';
 import FreeMap from '../../components/FreeMap';
 import {
   showWorkerTripNotification,
@@ -50,6 +52,12 @@ const TripView = () => {
   const [currentLocation, setCurrentLocation] = useState<{latitude: number, longitude: number} | null>(null);
   const [timetable, setTimetable] = useState<any>(null);
   const locationSubscription = useRef<Location.LocationSubscription | null>(null);
+
+  // Emergency Alert State
+  const [isEmergencyActive, setIsEmergencyActive] = useState(false);
+  const [emergencyTopic, setEmergencyTopic] = useState('');
+  const [emergencyRoute, setEmergencyRoute] = useState('');
+  const [emergencyModalVisible, setEmergencyModalVisible] = useState(false);
 
   const connectionRef = useRef<signalR.HubConnection | null>(null);
 
@@ -100,6 +108,9 @@ const TripView = () => {
       // 1. Start/Get the trip (Server returns existing trip if active)
       const tripData: any = await tripService.start(Number(timetableId), trackingMode as string, reverse);
       setTripId(tripData.id);
+      setIsEmergencyActive(tripData.isEmergency || false);
+      setEmergencyTopic(tripData.emergencyTopic || '');
+      setEmergencyRoute(tripData.emergencyRoute || '');
 
       // fetch timetable
       try {
@@ -266,6 +277,75 @@ const TripView = () => {
     } finally {
       setUpdating(false);
     }
+  };
+
+  const handleStartEmergency = async () => {
+    if (!tripId) return;
+    if (!emergencyTopic.trim()) {
+      Alert.alert('Required', 'Please enter a reason or topic for the emergency route deviation.');
+      return;
+    }
+
+    try {
+      setUpdating(true);
+      await emergencyService.start(tripId, emergencyTopic, emergencyRoute);
+      setIsEmergencyActive(true);
+      setEmergencyModalVisible(false);
+
+      // Broadcast via SignalR
+      if (connectionRef.current) {
+        await connectionRef.current.invoke('UpdateBusStatus', busId.toString(), {
+          isEmergency: true,
+          emergencyTopic,
+          emergencyRoute,
+          timestamp: new Date().toISOString()
+        });
+      }
+      Alert.alert('Emergency Active', 'The emergency route deviation has been declared and passengers notified.');
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to start emergency route tracking.');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleEndEmergency = async () => {
+    if (!tripId) return;
+
+    Alert.alert(
+      'End Emergency Route',
+      'Are you sure the emergency route deviation is cleared and you want to resume normal service?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Resume Normal',
+          onPress: async () => {
+            try {
+              setUpdating(true);
+              await emergencyService.end(tripId);
+              setIsEmergencyActive(false);
+              setEmergencyTopic('');
+              setEmergencyRoute('');
+
+              // Broadcast via SignalR
+              if (connectionRef.current) {
+                await connectionRef.current.invoke('UpdateBusStatus', busId.toString(), {
+                  isEmergency: false,
+                  emergencyTopic: '',
+                  emergencyRoute: '',
+                  timestamp: new Date().toISOString()
+                });
+              }
+              Alert.alert('Resumed Normal', 'Normal route tracking has been resumed.');
+            } catch (e: any) {
+              Alert.alert('Error', e.message || 'Failed to end emergency.');
+            } finally {
+              setUpdating(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleEndTrip = async () => {
@@ -455,18 +535,89 @@ const TripView = () => {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity 
-          style={styles.endTripBtn} 
-          onPress={handleEndTrip}
-          disabled={updating}
-        >
-          {updating ? (
-            <ActivityIndicator color="#D32F2F" />
-          ) : (
-            <Text style={styles.endTripText}>End Current Trip</Text>
-          )}
-        </TouchableOpacity>
+        {isEmergencyActive ? (
+          <TouchableOpacity 
+            style={[styles.endTripBtn, { backgroundColor: '#EF4444' }]} 
+            onPress={handleEndEmergency}
+            disabled={updating}
+          >
+            {updating ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={[styles.endTripText, { color: '#FFF' }]}>End Emergency / Resume Normal</Text>
+            )}
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.footerRow}>
+            <TouchableOpacity 
+              style={styles.emergencyBtn} 
+              onPress={() => setEmergencyModalVisible(true)}
+              disabled={updating}
+            >
+              <Ionicons name="warning-outline" size={20} color="#EF4444" />
+              <Text style={styles.emergencyBtnText}>Emergency</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.endTripBtnHalf} 
+              onPress={handleEndTrip}
+              disabled={updating}
+            >
+              {updating ? (
+                <ActivityIndicator color="#D32F2F" />
+              ) : (
+                <Text style={styles.endTripText}>End Trip</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
+
+      {/* Emergency Modal */}
+      <Modal visible={emergencyModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Ionicons name="warning" size={32} color="#EF4444" />
+              <Text style={styles.modalTitle}>Start Emergency Deviation</Text>
+            </View>
+            <Text style={styles.modalSub}>
+              Declare an emergency detour or route deviation. Passengers will be alerted in real time.
+            </Text>
+
+            <Text style={styles.inputLabel}>Reason / Topic *</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="e.g. Tree fallen, Road closed, Engine issue"
+              placeholderTextColor="#666"
+              value={emergencyTopic}
+              onChangeText={setEmergencyTopic}
+            />
+
+            <Text style={styles.inputLabel}>Temporary detoured route details</Text>
+            <TextInput
+              style={[styles.modalInput, { height: 80 }]}
+              placeholder="e.g. Taking diversion via High Street, delays expected"
+              placeholderTextColor="#666"
+              multiline
+              value={emergencyRoute}
+              onChangeText={setEmergencyRoute}
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={styles.cancelBtn} 
+                onPress={() => { setEmergencyModalVisible(false); setEmergencyTopic(''); setEmergencyRoute(''); }}
+              >
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.submitBtn} onPress={handleStartEmergency}>
+                <Text style={styles.submitText}>Alert Passengers</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -653,6 +804,106 @@ const styles = StyleSheet.create({
   endTripText: {
     color: '#D32F2F',
     fontSize: 16,
+    fontWeight: 'bold',
+  },
+  footerRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  endTripBtnHalf: {
+    flex: 1,
+    backgroundColor: '#1A1A1A',
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  emergencyBtn: {
+    flex: 1,
+    backgroundColor: '#1A1111',
+    borderWidth: 1,
+    borderColor: '#EF444455',
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  emergencyBtnText: {
+    color: '#EF4444',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#111',
+    borderRadius: 24,
+    padding: 25,
+    borderWidth: 1,
+    borderColor: '#222',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
+  },
+  modalTitle: {
+    color: '#FFF',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  modalSub: {
+    color: '#666',
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 20,
+  },
+  inputLabel: {
+    color: '#888',
+    fontSize: 12,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    marginBottom: 6,
+    marginTop: 10,
+  },
+  modalInput: {
+    backgroundColor: '#000',
+    color: '#FFF',
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: '#222',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  cancelText: {
+    color: '#666',
+    fontWeight: 'bold',
+  },
+  submitBtn: {
+    flex: 2,
+    backgroundColor: '#EF4444',
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  submitText: {
+    color: '#FFF',
     fontWeight: 'bold',
   },
   mapContainer: {
