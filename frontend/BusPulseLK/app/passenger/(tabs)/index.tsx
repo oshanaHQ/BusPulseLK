@@ -103,11 +103,11 @@ const PassengerDashboard = () => {
       {/* Premium Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Good Day,</Text>
-          <Text style={styles.userName}>{user?.fullName ?? 'Passenger'}</Text>
+          <Text style={styles.title}>Passenger Dashboard</Text>
+          <Text style={styles.subtitle}>Welcome, {user?.fullName ?? 'Passenger'}</Text>
         </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-          <Ionicons name="log-out-outline" size={24} color="#FFF" />
+          <Ionicons name="log-out-outline" size={20} color="#FF6200" />
         </TouchableOpacity>
       </View>
 
@@ -126,26 +126,16 @@ const PassengerDashboard = () => {
           </View>
         </TouchableOpacity>
 
-        {/* Quick Actions */}
-        <View style={styles.quickActions}>
-          <TouchableOpacity 
-            style={styles.actionCard}
-            onPress={() => router.push('/passenger/search')}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: '#FF620022' }]}>
-              <Ionicons name="location" size={24} color="#FF6200" />
-            </View>
-            <Text style={styles.actionLabel}>By Destination</Text>
+        {/* Quick Actions Grid */}
+        <View style={styles.grid}>
+          <TouchableOpacity style={styles.card} onPress={() => router.push('/passenger/search')}>
+            <Ionicons name="location-outline" size={36} color="#FF6200" />
+            <Text style={styles.cardText}>By Destination</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.actionCard}
-            onPress={() => router.push('/passenger/favorites')}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: '#FF620022' }]}>
-              <Ionicons name="heart" size={24} color="#FF6200" />
-            </View>
-            <Text style={styles.actionLabel}>Favorites</Text>
+          <TouchableOpacity style={styles.card} onPress={() => router.push('/passenger/favorites')}>
+            <Ionicons name="heart-outline" size={36} color="#FF6200" />
+            <Text style={styles.cardText}>Favorites</Text>
           </TouchableOpacity>
         </View>
 
@@ -251,20 +241,62 @@ const PassengerDashboard = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 25 },
-  greeting: { color: '#666', fontSize: 14 },
-  userName: { color: '#FFF', fontSize: 24, fontWeight: 'bold' },
-  logoutBtn: { backgroundColor: '#111', padding: 10, borderRadius: 12 },
   scrollContent: { paddingBottom: 30 },
   searchHero: { backgroundColor: '#FF6200', margin: 20, borderRadius: 20, padding: 25, flexDirection: 'row', alignItems: 'center' },
   searchHeroInfo: { flex: 1 },
   searchHeroTitle: { color: '#FFF', fontSize: 20, fontWeight: 'bold' },
   searchHeroSub: { color: '#FFD7B0', fontSize: 13, marginTop: 4 },
   searchHeroIcon: { backgroundColor: '#00000033', padding: 12, borderRadius: 15 },
-  quickActions: { flexDirection: 'row', paddingHorizontal: 20, gap: 15, marginBottom: 30 },
-  actionCard: { flex: 1, backgroundColor: '#111', borderRadius: 16, padding: 15, alignItems: 'center' },
-  actionIcon: { width: 50, height: 50, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-  actionLabel: { color: '#FFF', fontSize: 12, fontWeight: '600' },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 20,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#AAAAAA',
+    marginTop: 4,
+  },
+  logoutBtn: {
+    backgroundColor: '#111111',
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#222222',
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  card: {
+    width: '48%',
+    backgroundColor: '#111111',
+    borderRadius: 16,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#222222',
+  },
+  cardText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 10,
+  },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 25, marginBottom: 15 },
   sectionTitle: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
   viewAll: { color: '#FF6200', fontSize: 14, fontWeight: '600' },

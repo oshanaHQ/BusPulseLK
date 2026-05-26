@@ -118,7 +118,7 @@ const StaffDashboard = () => {
             <Text style={styles.subtitle}>Welcome, {user?.fullName ?? 'Staff'}</Text>
           </View>
           <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-            <Ionicons name="log-out-outline" size={24} color="#FF6200" />
+            <Ionicons name="log-out-outline" size={20} color="#FF6200" />
           </TouchableOpacity>
         </View>
 
@@ -150,25 +150,25 @@ const StaffDashboard = () => {
           {/* Action Grid */}
           <View style={styles.grid}>
             <TouchableOpacity style={styles.card}>
-              <Ionicons name="play-outline" size={40} color="#FF6200" />
+              <Ionicons name="play-outline" size={36} color="#FF6200" />
               <Text style={styles.cardText}>Start Trip</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.card}>
-              <Ionicons name="calendar-outline" size={40} color="#FF6200" />
+              <Ionicons name="calendar-outline" size={36} color="#FF6200" />
               <Text style={styles.cardText}>Schedule</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.card}
               onPress={() => bus && router.push({ pathname: '/worker/announcements' as any, params: { busId: bus.id } })}
             >
-              <Ionicons name="megaphone-outline" size={40} color="#FF6200" />
+              <Ionicons name="megaphone-outline" size={36} color="#FF6200" />
               <Text style={styles.cardText}>Announce</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.card}
               onPress={() => router.push('./regular-passengers')}
             >
-              <Ionicons name="people-circle-outline" size={40} color="#FF6200" />
+              <Ionicons name="people-circle-outline" size={36} color="#FF6200" />
               <Text style={styles.cardText}>Regular Passengers</Text>
             </TouchableOpacity>
           </View>
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 10,
-    paddingBottom: 24,
+    paddingBottom: 20,
   },
   title: {
     fontSize: 26,
@@ -298,7 +298,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   logoutBtn: {
-    padding: 8,
+    backgroundColor: '#111111',
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#222222',
   },
   content: {
     paddingHorizontal: 20,
@@ -382,14 +386,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#222',
+    borderColor: '#222222',
   },
   cardText: {
     color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
-    marginTop: 12,
     textAlign: 'center',
+    marginTop: 10,
   },
   sectionTitle: {
     color: '#FFFFFF',

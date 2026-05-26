@@ -36,54 +36,39 @@ const AdminDashboard = () => {
             <Text style={styles.subtitle}>Welcome, {user?.fullName ?? 'Admin'}</Text>
           </View>
           <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-            <Ionicons name="log-out-outline" size={24} color="#FF6200" />
+            <Ionicons name="log-out-outline" size={20} color="#FF6200" />
           </TouchableOpacity>
         </View>
 
         {/* Main Action Grid */}
         <View style={styles.grid}>
-          <TouchableOpacity 
-            style={styles.card}
-            onPress={() => router.push('./manage-routes')}
-          >
-            <Ionicons name="location-outline" size={40} color="#FF6200" />
+          <TouchableOpacity style={styles.card} onPress={() => router.push('./manage-routes')}>
+            <Ionicons name="location-outline" size={36} color="#FF6200" />
             <Text style={styles.cardText}>Manage Routes</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.card} onPress={() => router.push('./route-requests')}>
-            <Ionicons name="git-branch-outline" size={40} color="#FF6200" />
+            <Ionicons name="git-branch-outline" size={36} color="#FF6200" />
             <Text style={styles.cardText}>Route Requests</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => router.push('./regular-passengers')}
-          >
-            <Ionicons name="people-circle-outline" size={40} color="#FF6200" />
+          <TouchableOpacity style={styles.card} onPress={() => router.push('./regular-passengers')}>
+            <Ionicons name="people-circle-outline" size={36} color="#FF6200" />
             <Text style={styles.cardText}>Regular Passengers</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.card}
-            onPress={() => router.push('./bus-approvals')}
-          >
-            <Ionicons name="checkmark-circle-outline" size={40} color="#FF6200" />
+          <TouchableOpacity style={styles.card} onPress={() => router.push('./bus-approvals')}>
+            <Ionicons name="checkmark-circle-outline" size={36} color="#FF6200" />
             <Text style={styles.cardText}>Bus Approvals</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.card}
-            onPress={() => router.push('./manage-towns')}
-          >
-            <Ionicons name="map-outline" size={40} color="#FF6200" />
+          <TouchableOpacity style={styles.card} onPress={() => router.push('./manage-towns')}>
+            <Ionicons name="map-outline" size={36} color="#FF6200" />
             <Text style={styles.cardText}>Manage Cities</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.card}
-            onPress={() => router.push('./bus-ratings')}
-          >
-            <Ionicons name="star-outline" size={40} color="#FF6200" />
+          <TouchableOpacity style={styles.card} onPress={() => router.push('./bus-ratings')}>
+            <Ionicons name="star-outline" size={36} color="#FF6200" />
             <Text style={styles.cardText}>Bus Ratings</Text>
           </TouchableOpacity>
         </View>
@@ -198,7 +183,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 10,
-    paddingBottom: 16,
+    paddingBottom: 20,
   },
   title: {
     fontSize: 26,
@@ -206,12 +191,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#AAAAAA',
-    marginTop: 2,
+    marginTop: 4,
   },
   logoutBtn: {
-    padding: 8,
+    backgroundColor: '#111111',
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#222222',
   },
   grid: {
     flexDirection: 'row',
@@ -224,17 +213,19 @@ const styles = StyleSheet.create({
     width: '48%',
     backgroundColor: '#111111',
     borderRadius: 16,
-    paddingVertical: 28,
+    paddingVertical: 24,
     paddingHorizontal: 16,
     alignItems: 'center',
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#222222',
   },
   cardText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    marginTop: 12,
     textAlign: 'center',
+    marginTop: 10,
   },
   sectionTitle: {
     color: '#FFFFFF',
