@@ -293,6 +293,67 @@ namespace BusPulseLK.Controllers
             return Ok(new { message = "Trip completed." });
         }
 
+        // ────────────────────────────────────────────────────────────────────
+        // POST api/trips/{id}/emergency  – raise emergency alert
+        // DELETE api/trips/{id}/emergency – clear emergency alert
+        // ────────────────────────────────────────────────────────────────────
+        [HttpPost("{id}/emergency")]
+        [Authorize]
+        public async Task<IActionResult> StartEmergency(int id, [FromBody] EmergencyDto dto)
+        {
+            var userId = GetCurrentUserId();
+            var trip = await _context.Trips
+                .Include(t => t.Timetable).ThenInclude(tt => tt.Bus)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (trip == null) return NotFound();
+
+            var bus = trip.Timetable.Bus;
+            bool isWorker = bus.DriverId == userId || bus.ConductorId == userId;
+            bool isRegularPassenger = false;
+            if (!isWorker)
+                isRegularPassenger = await _context.RegularPassengerRequests
+                    .AnyAsync(r => r.PassengerId == userId && r.BusId == bus.Id && r.Status == "Approved");
+
+            if (!isWorker && !isRegularPassenger) return Forbid();
+
+            trip.IsEmergency = true;
+            trip.EmergencyTopic = dto.Topic;
+            trip.EmergencyRoute = dto.EmergencyRoute;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Emergency alert raised.", isEmergency = true, topic = dto.Topic, emergencyRoute = dto.EmergencyRoute });
+        }
+
+        [HttpDelete("{id}/emergency")]
+        [Authorize]
+        public async Task<IActionResult> EndEmergency(int id)
+        {
+            var userId = GetCurrentUserId();
+            var trip = await _context.Trips
+                .Include(t => t.Timetable).ThenInclude(tt => tt.Bus)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (trip == null) return NotFound();
+
+            var bus = trip.Timetable.Bus;
+            bool isWorker = bus.DriverId == userId || bus.ConductorId == userId;
+            bool isRegularPassenger = false;
+            if (!isWorker)
+                isRegularPassenger = await _context.RegularPassengerRequests
+                    .AnyAsync(r => r.PassengerId == userId && r.BusId == bus.Id && r.Status == "Approved");
+
+            if (!isWorker && !isRegularPassenger) return Forbid();
+
+            trip.IsEmergency = false;
+            trip.EmergencyTopic = null;
+            trip.EmergencyRoute = null;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Emergency cleared.", isEmergency = false });
+        }
+
+
         private int? GetCurrentUserId()
         {
             var claim = User.FindFirst(ClaimTypes.NameIdentifier);
@@ -310,7 +371,10 @@ namespace BusPulseLK.Controllers
             TrackingMode = t.TrackingMode,
             CurrentLatitude = t.CurrentLatitude,
             CurrentLongitude = t.CurrentLongitude,
-            IsActive = t.Status != "Completed" && t.Status != "Cancelled"
+            IsActive = t.Status != "Completed" && t.Status != "Cancelled",
+            IsEmergency = t.IsEmergency,
+            EmergencyTopic = t.EmergencyTopic,
+            EmergencyRoute = t.EmergencyRoute,
         };
     }
 
@@ -349,5 +413,15 @@ namespace BusPulseLK.Controllers
         public double? CurrentLongitude { get; set; }
         public bool IsActive { get; set; }
         public object? Stops { get; set; }
+        // Emergency
+        public bool IsEmergency { get; set; }
+        public string? EmergencyTopic { get; set; }
+        public string? EmergencyRoute { get; set; }
+    }
+
+    public class EmergencyDto
+    {
+        public string Topic { get; set; } = null!;
+        public string EmergencyRoute { get; set; } = null!;
     }
 }

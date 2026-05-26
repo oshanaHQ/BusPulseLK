@@ -33,6 +33,9 @@ namespace BusPulseLK.Models
         [StringLength(20)]
         public string Status { get; set; } = "Open";
 
+        /// <summary>If true, the owner sees "Anonymous" instead of the passenger's name.</summary>
+        public bool IsAnonymous { get; set; } = false;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

@@ -31,6 +31,10 @@ namespace BusPulseLK.Models
         public string Type { get; set; } = "General";
 
         [Required]
+        [StringLength(100)]
+        public string Title { get; set; } = "General Notice";
+
+        [Required]
         [StringLength(500)]
         public string Message { get; set; } = null!;
 

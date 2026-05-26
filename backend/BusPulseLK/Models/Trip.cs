@@ -52,6 +52,16 @@ namespace BusPulseLK.Models
         /// <summary>Whether this trip is the return journey.</summary>
         public bool IsReturnJourney { get; set; } = false;
 
+        // ── Emergency Route ───────────────────────────────────────────────────
+        /// <summary>True when the bus is deviating from normal route due to emergency.</summary>
+        public bool IsEmergency { get; set; } = false;
+
+        [StringLength(200)]
+        public string? EmergencyTopic { get; set; }
+
+        [StringLength(500)]
+        public string? EmergencyRoute { get; set; }
+
         // ── Meta ─────────────────────────────────────────────────────────────
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
