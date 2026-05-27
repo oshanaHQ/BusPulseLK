@@ -1,7 +1,8 @@
 // app/owner/request-route.tsx
 import React, { useState, useEffect } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  View, Text, StyleSheet, SafeAreaView, ScrollView,
+  View, Text, StyleSheet, ScrollView,
   TouchableOpacity, TextInput, FlatList, Modal,
   ActivityIndicator, Alert, StatusBar,
 } from 'react-native';
@@ -12,6 +13,7 @@ import { routeRequestService, townService } from '../../services/api';
 interface Town { id: number; name: string; }
 
 const RequestRoute = () => {
+  const insets = useSafeAreaInsets();
   const [towns, setTowns] = useState<Town[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [routeName, setRouteName] = useState('');
@@ -100,7 +102,7 @@ const RequestRoute = () => {
   const statusIcon = (s: string): any => s === 'Approved' ? 'checkmark-circle' : s === 'Rejected' ? 'close-circle' : 'time';
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
@@ -267,7 +269,7 @@ const RequestRoute = () => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 

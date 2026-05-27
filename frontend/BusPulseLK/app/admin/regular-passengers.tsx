@@ -1,7 +1,8 @@
 // app/admin/regular-passengers.tsx
 import React, { useState, useEffect } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  View, Text, StyleSheet, SafeAreaView, FlatList,
+  View, Text, StyleSheet, FlatList,
   TouchableOpacity, ActivityIndicator, Alert, StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +10,7 @@ import { router } from 'expo-router';
 import { regularPassengerService } from '../../services/api';
 
 const AdminRegularPassengers = () => {
+  const insets = useSafeAreaInsets();
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
@@ -78,7 +80,7 @@ const AdminRegularPassengers = () => {
   const statusColor = (s: string) => s === 'Approved' ? '#4CAF50' : s === 'Rejected' ? '#D32F2F' : '#FF9800';
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
@@ -179,7 +181,7 @@ const AdminRegularPassengers = () => {
           )}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 

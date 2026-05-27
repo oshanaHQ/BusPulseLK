@@ -1,10 +1,10 @@
 // app/passenger/live-tracking.tsx
 import React, { useState, useEffect, useRef } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
@@ -27,6 +27,7 @@ import {
 } from '../../services/notificationService';
 
 const LiveTrackingScreen = () => {
+  const insets = useSafeAreaInsets();
   const { busId, timetableId } = useLocalSearchParams();
   const [trip, setTrip] = useState<any>(null);
   const [timetable, setTimetable] = useState<any>(null);
@@ -198,7 +199,7 @@ const LiveTrackingScreen = () => {
   if (loading) return <View style={styles.center}><ActivityIndicator color="#FF6200" /></View>;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
       
       <View style={styles.header}>
@@ -389,7 +390,7 @@ const LiveTrackingScreen = () => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 

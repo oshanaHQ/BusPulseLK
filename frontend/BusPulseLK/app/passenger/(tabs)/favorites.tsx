@@ -1,10 +1,10 @@
 // app/passenger/(tabs)/favorites.tsx
 import React, { useState, useEffect } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
@@ -17,6 +17,7 @@ import { getActiveTracking, cancelTrackingNotification, clearActiveTracking } fr
 import { Alert } from 'react-native';
 
 const FavoritesScreen = () => {
+  const insets = useSafeAreaInsets();
   const [favorites, setFavorites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -87,7 +88,7 @@ const FavoritesScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
         <Text style={styles.title}>My Favorites</Text>
@@ -109,7 +110,7 @@ const FavoritesScreen = () => {
           }
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 

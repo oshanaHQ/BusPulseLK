@@ -1,7 +1,8 @@
 // app/worker/regular-passengers.tsx
 import React, { useState, useEffect } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  View, Text, StyleSheet, SafeAreaView, ScrollView,
+  View, Text, StyleSheet, ScrollView,
   TouchableOpacity, TextInput, ActivityIndicator, Alert, StatusBar, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +10,7 @@ import { router } from 'expo-router';
 import { regularPassengerService } from '../../services/api';
 
 const WorkerRegularPassengers = () => {
+  const insets = useSafeAreaInsets();
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [nominating, setNominating] = useState(false);
@@ -73,7 +75,7 @@ const WorkerRegularPassengers = () => {
   const rejected = requests.filter(r => r.status === 'Rejected');
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
@@ -223,7 +225,7 @@ const WorkerRegularPassengers = () => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 

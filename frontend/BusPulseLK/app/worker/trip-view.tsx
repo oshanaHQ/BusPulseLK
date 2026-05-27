@@ -1,10 +1,10 @@
 // app/worker/trip-view.tsx
 import React, { useState, useEffect, useRef } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
@@ -38,6 +38,7 @@ interface Stop {
 }
 
 const TripView = () => {
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const { busId, timetableId, routeName, departureTime, trackingMode } = params;
 
@@ -419,7 +420,7 @@ const TripView = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
       
       <View style={styles.header}>
@@ -618,7 +619,7 @@ const TripView = () => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
