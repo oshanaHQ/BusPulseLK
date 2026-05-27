@@ -48,9 +48,9 @@ const TripView = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [isReversed, setIsReversed] = useState(false);
-  
+
   // GPS Tracking State
-  const [currentLocation, setCurrentLocation] = useState<{latitude: number, longitude: number} | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{ latitude: number, longitude: number } | null>(null);
   const [timetable, setTimetable] = useState<any>(null);
   const locationSubscription = useRef<Location.LocationSubscription | null>(null);
 
@@ -124,15 +124,15 @@ const TripView = () => {
       // 2. Get route stops
       const routeData: any = await routeService.getAll();
       const route = routeData.find((r: any) => r.name === routeName);
-      
+
       if (route) {
         const stopsData = await routeService.getStops(route.id);
         let stopsList = stopsData as Stop[];
-        
+
         if (reverse) {
           stopsList = [...stopsList].reverse();
         }
-        
+
         setStops(stopsList);
 
         // 3. Recovery: Find where we were (only if status is Started)
@@ -153,7 +153,7 @@ const TripView = () => {
           const nextIndex = tripData.status === 'Started' && tripData.lastPassedTownId
             ? stopsList.findIndex(s => s.town.id === tripData.lastPassedTownId) + 1
             : 0;
-          
+
           if (nextIndex < stopsList.length) {
             await showWorkerTripNotification(
               routeName as string,
@@ -240,14 +240,14 @@ const TripView = () => {
   const markStopPassed = async (index: number) => {
     if (!tripId || updating) return;
     const stop = stops[index];
-    
+
     try {
       setUpdating(true);
       await tripService.updateProgress(tripId, stop.town.id);
-      
+
       // Update local state
       setCurrentStopIndex(index);
-      
+
       // Broadcast via SignalR
       if (connectionRef.current) {
         await connectionRef.current.invoke('UpdateBusStatus', busId.toString(), {
@@ -357,21 +357,21 @@ const TripView = () => {
       'Are you sure you want to end this trip?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'End Trip', 
+        {
+          text: 'End Trip',
           style: 'destructive',
           onPress: async () => {
             try {
               setUpdating(true);
               await tripService.end(tripId);
-              
+
               Alert.alert(
                 'Trip Completed',
                 'Do you want to start the return journey?',
                 [
                   { text: 'No, Exit', onPress: async () => { await cancelTrackingNotification(); router.back(); } },
-                  { 
-                    text: 'Yes, Start Return', 
+                  {
+                    text: 'Yes, Start Return',
                     onPress: async () => {
                       await cancelTrackingNotification();
                       const nextReverse = !isReversed;
@@ -398,13 +398,13 @@ const TripView = () => {
     const directionTimes = timetable.stationTimes.filter((st: any) => !!st.isReturnJourney === isReversed);
     const expectedTimeStr = directionTimes.find((st: any) => st.townId === townId)?.expectedTime;
     if (!expectedTimeStr) return null;
-    
+
     const now = new Date();
     const [hours, minutes] = expectedTimeStr.split(':');
     const expectedDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hours), parseInt(minutes));
-    
+
     const diffMins = Math.floor((now.getTime() - expectedDate.getTime()) / 60000);
-    
+
     if (diffMins > 5) return { text: `Delayed ${diffMins}m`, color: '#D32F2F', expectedTime: expectedTimeStr };
     if (diffMins < -5) return { text: `Early ${Math.abs(diffMins)}m`, color: '#4CAF50', expectedTime: expectedTimeStr };
     return { text: 'On Time', color: '#4CAF50', expectedTime: expectedTimeStr };
@@ -420,9 +420,9 @@ const TripView = () => {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
-      
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="close" size={28} color="#FFFFFF" />
@@ -455,10 +455,10 @@ const TripView = () => {
         {trackingMode === 'Automatic' ? (
           <View style={styles.mapContainer}>
             {currentLocation ? (
-              <FreeMap 
-                latitude={currentLocation.latitude} 
-                longitude={currentLocation.longitude} 
-                zoom={15} 
+              <FreeMap
+                latitude={currentLocation.latitude}
+                longitude={currentLocation.longitude}
+                zoom={15}
               />
             ) : (
               <View style={styles.mapLoading}>
@@ -473,12 +473,12 @@ const TripView = () => {
               const isPassed = index <= currentStopIndex;
               const isNext = index === currentStopIndex + 1;
               const delayStatus = isNext ? getDelayStatus(stop.town.id) : null;
-              
+
               return (
                 <View key={`${stop.id}-${index}`} style={styles.timelineItem}>
                   <View style={styles.leftCol}>
                     <View style={[
-                      styles.circle, 
+                      styles.circle,
                       isPassed && styles.circlePassed,
                       isNext && styles.circleNext
                     ]}>
@@ -492,11 +492,11 @@ const TripView = () => {
                       <View style={[styles.line, isPassed && styles.linePassed]} />
                     )}
                   </View>
-                  
+
                   <View style={styles.rightCol}>
                     <View style={styles.stopInfo}>
                       <Text style={[
-                        styles.stopName, 
+                        styles.stopName,
                         isPassed && styles.textPassed,
                         isNext && styles.textNext
                       ]}>
@@ -511,8 +511,8 @@ const TripView = () => {
                         </View>
                       )}
                       {isNext && (
-                        <TouchableOpacity 
-                          style={styles.markBtn} 
+                        <TouchableOpacity
+                          style={styles.markBtn}
                           onPress={() => markStopPassed(index)}
                           disabled={updating}
                         >
@@ -537,8 +537,8 @@ const TripView = () => {
 
       <View style={styles.footer}>
         {isEmergencyActive ? (
-          <TouchableOpacity 
-            style={[styles.endTripBtn, { backgroundColor: '#EF4444' }]} 
+          <TouchableOpacity
+            style={[styles.endTripBtn, { backgroundColor: '#EF4444' }]}
             onPress={handleEndEmergency}
             disabled={updating}
           >
@@ -550,8 +550,8 @@ const TripView = () => {
           </TouchableOpacity>
         ) : (
           <View style={styles.footerRow}>
-            <TouchableOpacity 
-              style={styles.emergencyBtn} 
+            <TouchableOpacity
+              style={styles.emergencyBtn}
               onPress={() => setEmergencyModalVisible(true)}
               disabled={updating}
             >
@@ -559,8 +559,8 @@ const TripView = () => {
               <Text style={styles.emergencyBtnText}>Emergency</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.endTripBtnHalf} 
+            <TouchableOpacity
+              style={styles.endTripBtnHalf}
               onPress={handleEndTrip}
               disabled={updating}
             >
@@ -606,8 +606,8 @@ const TripView = () => {
             />
 
             <View style={styles.modalActions}>
-              <TouchableOpacity 
-                style={styles.cancelBtn} 
+              <TouchableOpacity
+                style={styles.cancelBtn}
                 onPress={() => { setEmergencyModalVisible(false); setEmergencyTopic(''); setEmergencyRoute(''); }}
               >
                 <Text style={styles.cancelText}>Cancel</Text>
