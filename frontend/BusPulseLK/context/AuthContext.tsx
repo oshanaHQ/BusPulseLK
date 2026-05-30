@@ -9,10 +9,12 @@ interface AuthState {
   token: string | null;
   user: AuthUser | null;
   isLoading: boolean;   // true while reading AsyncStorage on startup
+  isGuest: boolean;     // true when logged in as guest (in-memory only)
 }
 
 interface AuthContextValue extends AuthState {
   login: (token: string, user: AuthUser) => Promise<void>;
+  loginAsGuest: () => void;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -33,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     token: null,
     user: null,
     isLoading: true,
+    isGuest: false,
   });
 
   // Restore session on app startup
@@ -45,12 +48,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ]);
 
         if (token && userJson) {
-          setState({ token, user: JSON.parse(userJson), isLoading: false });
+          setState({ token, user: JSON.parse(userJson), isLoading: false, isGuest: false });
         } else {
-          setState({ token: null, user: null, isLoading: false });
+          setState({ token: null, user: null, isLoading: false, isGuest: false });
         }
       } catch {
-        setState({ token: null, user: null, isLoading: false });
+        setState({ token: null, user: null, isLoading: false, isGuest: false });
       }
     })();
   }, []);
@@ -61,7 +64,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       AsyncStorage.setItem(TOKEN_KEY, token),
       AsyncStorage.setItem(USER_KEY, JSON.stringify(user)),
     ]);
-    setState({ token, user, isLoading: false });
+    setState({ token, user, isLoading: false, isGuest: false });
+  };
+
+  // Guest login — in-memory only, not persisted to AsyncStorage
+  const loginAsGuest = () => {
+    const guestNumber = Math.floor(1000 + Math.random() * 9000);
+    const guestUser: AuthUser = {
+      id: -1,
+      fullName: `Guest#${guestNumber}`,
+      email: '',
+      role: 'Passenger',
+    };
+    setState({ token: 'guest', user: guestUser, isLoading: false, isGuest: true });
   };
 
   // Clear everything
@@ -70,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       AsyncStorage.removeItem(TOKEN_KEY),
       AsyncStorage.removeItem(USER_KEY),
     ]);
-    setState({ token: null, user: null, isLoading: false });
+    setState({ token: null, user: null, isLoading: false, isGuest: false });
   };
 
   return (
@@ -79,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...state,
         isAuthenticated: !!state.token,
         login,
+        loginAsGuest,
         logout,
       }}
     >

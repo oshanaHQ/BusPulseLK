@@ -228,15 +228,12 @@ const RegisterScreen = () => {
               )}
             </TouchableOpacity>
 
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.orText}>or register with</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <TouchableOpacity style={styles.socialButton}>
-              <Ionicons name="logo-google" size={20} color="#fff" />
-              <Text style={styles.socialButtonText}>Google</Text>
+            <TouchableOpacity
+              style={styles.guestButton}
+              onPress={() => auth.loginAsGuest()}
+            >
+              <Ionicons name="person-outline" size={20} color="#FF6200" style={{ marginRight: 10 }} />
+              <Text style={styles.guestButtonText}>Continue as Guest</Text>
             </TouchableOpacity>
 
             <View style={styles.footer}>
@@ -402,35 +399,21 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
   },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#333333',
-  },
-  orText: {
-    color: '#888888',
-    paddingHorizontal: 16,
-    fontSize: 14,
-  },
-  socialButton: {
+  guestButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#4285F4',
-    paddingVertical: 14,
     borderRadius: 12,
+    paddingVertical: 15,
     marginBottom: 32,
+    borderWidth: 1.5,
+    borderColor: '#FF6200',
+    backgroundColor: 'transparent',
   },
-  socialButtonText: {
-    color: '#FFFFFF',
+  guestButtonText: {
+    color: '#FF6200',
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: 12,
   },
   footer: {
     alignItems: 'center',

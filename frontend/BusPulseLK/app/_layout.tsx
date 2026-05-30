@@ -25,7 +25,7 @@ import { AuthProvider, useAuth } from '../context/AuthContext';
 // Runs inside AuthProvider so it can read auth state.
 
 function RouteGuard() {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, user, isGuest } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -44,7 +44,8 @@ function RouteGuard() {
       
       switch (role) {
         case 'passenger':
-          router.replace('/passenger');
+          // Guests go straight to the search screen, registered passengers to the home dashboard
+          router.replace(isGuest ? '/passenger/(tabs)/search' : '/passenger');
           break;
         case 'busowner':
           router.replace('/owner/dashboard');

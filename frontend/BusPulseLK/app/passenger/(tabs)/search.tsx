@@ -20,11 +20,13 @@ import { router } from 'expo-router';
 import { searchService, townService, favoriteService } from '../../../services/api';
 import { getActiveTracking, cancelTrackingNotification, clearActiveTracking } from '../../../services/notificationService';
 import RatingsModal from '../../../components/RatingsModal';
+import { useAuth } from '../../../context/AuthContext';
 
 type SearchMode = 'Name' | 'Destination' | 'Route';
 
 const SearchScreen = () => {
   const insets = useSafeAreaInsets();
+  const { isGuest, user, logout } = useAuth();
   const [mode, setMode] = useState<SearchMode>('Name');
   const [query, setQuery] = useState('');
   const [originId, setOriginId] = useState<number | null>(null);
@@ -86,6 +88,13 @@ const SearchScreen = () => {
     }
   };
 
+  const handleLogout = () => {
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Logout', style: 'destructive', onPress: () => logout() },
+    ]);
+  };
+
   const toggleFavorite = async (busId: number) => {
     try {
       await favoriteService.toggle(busId);
@@ -102,13 +111,15 @@ const SearchScreen = () => {
           <Text style={styles.routeNumber}>{item.route.routeNumber}</Text>
           <Text style={styles.busName}>{item.bus.name || item.bus.numberPlate}</Text>
         </View>
-        <TouchableOpacity onPress={() => toggleFavorite(item.bus.id)}>
-          <Ionicons 
-            name={item.isFavorite ? "heart" : "heart-outline"} 
-            size={24} 
-            color={item.isFavorite ? "#FF6200" : "#666"} 
-          />
-        </TouchableOpacity>
+        {!isGuest && (
+          <TouchableOpacity onPress={() => toggleFavorite(item.bus.id)}>
+            <Ionicons 
+              name={item.isFavorite ? "heart" : "heart-outline"} 
+              size={24} 
+              color={item.isFavorite ? "#FF6200" : "#666"} 
+            />
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.routeInfo}>
@@ -180,7 +191,28 @@ const SearchScreen = () => {
         busName={selectedBusName}
       />
       <StatusBar barStyle="light-content" />
-      
+
+      {/* Guest Mode Banner */}
+      {isGuest && (
+        <View style={styles.guestBanner}>
+          <Ionicons name="person-circle-outline" size={18} color="#FF6200" />
+          <Text style={styles.guestBannerText}>Guest Mode</Text>
+          <TouchableOpacity onPress={() => logout()} style={styles.guestSignInBtn}>
+            <Text style={styles.guestSignInText}>Sign In</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Guest name + logout button */}
+      {isGuest && (
+        <View style={styles.guestNameRow}>
+          <Text style={styles.guestNameText}>Welcome, {user?.fullName}</Text>
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+            <Ionicons name="log-out-outline" size={20} color="#FF6200" />
+          </TouchableOpacity>
+        </View>
+      )}
+
       <View style={styles.header}>
         <Text style={styles.title}>Find Your Bus</Text>
         
@@ -317,6 +349,53 @@ const SearchScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
+  guestBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF620011',
+    borderBottomWidth: 1,
+    borderBottomColor: '#FF620033',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  guestBannerText: {
+    flex: 1,
+    color: '#FF6200',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  guestSignInBtn: {
+    backgroundColor: '#FF6200',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  guestSignInText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  guestNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  guestNameText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  logoutBtn: {
+    backgroundColor: '#111111',
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#222222',
+  },
   header: { padding: 20, backgroundColor: '#000', borderBottomWidth: 1, borderBottomColor: '#111' },
   title: { fontSize: 24, fontWeight: 'bold', color: '#FFF', marginBottom: 15 },
   modeSelector: { flexDirection: 'row', backgroundColor: '#111', borderRadius: 12, padding: 4, marginBottom: 15 },

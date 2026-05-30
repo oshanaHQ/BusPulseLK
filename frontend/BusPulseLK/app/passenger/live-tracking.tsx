@@ -18,6 +18,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import * as signalR from '@microsoft/signalr';
 import { tripService, timetableService, ratingService, reportService, API_BASE_URL } from '../../services/api';
 import FreeMap from '../../components/FreeMap';
+import { useAuth } from '../../context/AuthContext';
 import {
   setActiveTracking,
   clearActiveTracking,
@@ -28,6 +29,7 @@ import {
 
 const LiveTrackingScreen = () => {
   const insets = useSafeAreaInsets();
+  const { isGuest } = useAuth();
   const { busId, timetableId } = useLocalSearchParams();
   const [trip, setTrip] = useState<any>(null);
   const [timetable, setTimetable] = useState<any>(null);
@@ -308,17 +310,19 @@ const LiveTrackingScreen = () => {
           </>
         )}
 
-        {/* Action Buttons (Rating/Report) */}
-        <View style={styles.actionRow}>
-          <TouchableOpacity style={styles.actionBtn} onPress={() => setRatingModal(true)}>
-            <Ionicons name="star-outline" size={20} color="#FF6200" />
-            <Text style={styles.actionBtnText}>Rate Bus</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionBtn, styles.reportBtn]} onPress={() => setReportModal(true)}>
-            <Ionicons name="alert-circle-outline" size={20} color="#D32F2F" />
-            <Text style={[styles.actionBtnText, { color: '#D32F2F' }]}>Report Issue</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Action Buttons (Rating/Report) — hidden for guests */}
+        {!isGuest && (
+          <View style={styles.actionRow}>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => setRatingModal(true)}>
+              <Ionicons name="star-outline" size={20} color="#FF6200" />
+              <Text style={styles.actionBtnText}>Rate Bus</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionBtn, styles.reportBtn]} onPress={() => setReportModal(true)}>
+              <Ionicons name="alert-circle-outline" size={20} color="#D32F2F" />
+              <Text style={[styles.actionBtnText, { color: '#D32F2F' }]}>Report Issue</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
 
       {/* Rating Modal */}

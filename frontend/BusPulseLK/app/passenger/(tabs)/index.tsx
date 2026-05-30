@@ -17,16 +17,18 @@ import { favoriteService, regularPassengerService } from '../../../services/api'
 import { getActiveTracking, cancelTrackingNotification, clearActiveTracking } from '../../../services/notificationService';
 
 const PassengerDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isGuest } = useAuth();
   const insets = useSafeAreaInsets();
   const [favorites, setFavorites] = useState<any[]>([]);
   const [regularBuses, setRegularBuses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isGuest);
 
   useEffect(() => {
-    loadFavorites();
-    loadRegularBuses();
-  }, []);
+    if (!isGuest) {
+      loadFavorites();
+      loadRegularBuses();
+    }
+  }, [isGuest]);
 
   const loadFavorites = async () => {
     try {
@@ -99,12 +101,23 @@ const PassengerDashboard = () => {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" />
-      
+
+      {/* Guest Mode Banner */}
+      {isGuest && (
+        <View style={styles.guestBanner}>
+          <Ionicons name="person-circle-outline" size={18} color="#FF6200" />
+          <Text style={styles.guestBannerText}>Guest Mode — limited features</Text>
+          <TouchableOpacity onPress={() => logout()} style={styles.guestSignInBtn}>
+            <Text style={styles.guestSignInText}>Sign In</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Premium Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Passenger Dashboard</Text>
-          <Text style={styles.subtitle}>Welcome, {user?.fullName ?? 'Passenger'}</Text>
+          <Text style={styles.subtitle}>Welcome, {isGuest ? user?.fullName : (user?.fullName ?? 'Passenger')}</Text>
         </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
           <Ionicons name="log-out-outline" size={20} color="#FF6200" />
@@ -133,14 +146,16 @@ const PassengerDashboard = () => {
             <Text style={styles.cardText}>By Destination</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.card} onPress={() => router.push('/passenger/favorites')}>
-            <Ionicons name="heart-outline" size={36} color="#FF6200" />
-            <Text style={styles.cardText}>Favorites</Text>
-          </TouchableOpacity>
+          {!isGuest && (
+            <TouchableOpacity style={styles.card} onPress={() => router.push('/passenger/favorites')}>
+              <Ionicons name="heart-outline" size={36} color="#FF6200" />
+              <Text style={styles.cardText}>Favorites</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* My Regular Bus */}
-        {regularBuses.length > 0 && (
+        {/* My Regular Bus — hidden for guests */}
+        {!isGuest && regularBuses.length > 0 && (
           <>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>My Regular Bus</Text>
@@ -240,8 +255,36 @@ const PassengerDashboard = () => {
 };
 
 const styles = StyleSheet.create({
+  guestBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF620011',
+    borderBottomWidth: 1,
+    borderBottomColor: '#FF620033',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  guestBannerText: {
+    flex: 1,
+    color: '#FF6200',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  guestSignInBtn: {
+    backgroundColor: '#FF6200',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  guestSignInText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   container: { flex: 1, backgroundColor: '#000' },
   scrollContent: { paddingBottom: 30 },
+
   searchHero: { backgroundColor: '#FF6200', margin: 20, borderRadius: 20, padding: 25, flexDirection: 'row', alignItems: 'center' },
   searchHeroInfo: { flex: 1 },
   searchHeroTitle: { color: '#FFF', fontSize: 20, fontWeight: 'bold' },
