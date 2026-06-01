@@ -16,6 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as signalR from '@microsoft/signalr';
+import * as Location from 'expo-location';
 import { tripService, timetableService, ratingService, reportService, API_BASE_URL } from '../../services/api';
 import FreeMap from '../../components/FreeMap';
 import { useAuth } from '../../context/AuthContext';
@@ -43,6 +44,7 @@ const LiveTrackingScreen = () => {
   const [comment, setComment] = useState('');
   const [reportDesc, setReportDesc] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [currentAddress, setCurrentAddress] = useState('Detecting location...');
 
   const connectionRef = useRef<signalR.HubConnection | null>(null);
 
@@ -150,6 +152,26 @@ const LiveTrackingScreen = () => {
     }
   };
 
+  useEffect(() => {
+    if (status?.trackingMode === 'Automatic' && status?.latitude && status?.longitude) {
+      reverseGeocode(status.latitude, status.longitude);
+    }
+  }, [status?.latitude, status?.longitude, status?.trackingMode]);
+
+  const reverseGeocode = async (lat: number, lon: number) => {
+    try {
+      const result = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
+      if (result.length > 0) {
+        const place = result[0];
+        const address = [place.street || place.name, place.city || place.subregion || place.district].filter(Boolean).join(', ');
+        setCurrentAddress(address || 'Unknown Location');
+      }
+    } catch (error) {
+      console.log('Reverse geocode error:', error);
+      setCurrentAddress('Location unavailable');
+    }
+  };
+
   const submitRating = async () => {
     try {
       await ratingService.submit({ busId: Number(busId), stars, comment });
@@ -247,13 +269,20 @@ const LiveTrackingScreen = () => {
             {status?.trackingMode === 'Automatic' && (
               <>
                 {status?.latitude && status?.longitude ? (
-                  <View style={styles.mapContainer}>
-                    <FreeMap 
-                      latitude={status.latitude} 
-                      longitude={status.longitude} 
-                      zoom={15} 
-                    />
-                  </View>
+                  <>
+                    <View style={styles.mapContainer}>
+                      <FreeMap 
+                        latitude={status.latitude} 
+                        longitude={status.longitude} 
+                        zoom={15} 
+                      />
+                    </View>
+                    <View style={styles.addressBox}>
+                      <Ionicons name="location" size={20} color="#FF6200" />
+                      <Text style={styles.addressLabel}>Your bus is now on: </Text>
+                      <Text style={styles.addressValue} numberOfLines={1}>{currentAddress}</Text>
+                    </View>
+                  </>
                 ) : (
                   <View style={[styles.mapContainer, styles.mapFallback]}>
                     <Ionicons name="map-outline" size={48} color="#333" />
@@ -434,6 +463,9 @@ const styles = StyleSheet.create({
   submitBtn: { flex: 2, backgroundColor: '#FF6200', paddingVertical: 15, borderRadius: 12, alignItems: 'center' },
   submitText: { color: '#FFF', fontWeight: 'bold' },
   mapContainer: { width: '100%', height: 300, borderRadius: 20, overflow: 'hidden', marginTop: 20, borderWidth: 1, borderColor: '#222' },
+  addressBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#111', padding: 15, borderRadius: 12, marginTop: 15, borderWidth: 1, borderColor: '#222' },
+  addressLabel: { color: '#AAA', fontSize: 13, marginLeft: 8 },
+  addressValue: { color: '#FFF', fontSize: 14, fontWeight: 'bold', flex: 1 },
   mapFallback: { backgroundColor: '#111', justifyContent: 'center', alignItems: 'center', gap: 10 },
   mapFallbackText: { color: '#666', fontSize: 14, fontWeight: 'bold' },
   anonToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 15, paddingVertical: 5 },

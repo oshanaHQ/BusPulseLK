@@ -51,6 +51,7 @@ const TripView = () => {
 
   // GPS Tracking State
   const [currentLocation, setCurrentLocation] = useState<{ latitude: number, longitude: number } | null>(null);
+  const [currentAddress, setCurrentAddress] = useState('Detecting location...');
   const [timetable, setTimetable] = useState<any>(null);
   const locationSubscription = useRef<Location.LocationSubscription | null>(null);
 
@@ -102,6 +103,26 @@ const TripView = () => {
       startLocationTracking();
     }
   }, [tripId, trackingMode]);
+
+  useEffect(() => {
+    if (currentLocation && trackingMode === 'Automatic') {
+      reverseGeocode(currentLocation.latitude, currentLocation.longitude);
+    }
+  }, [currentLocation]);
+
+  const reverseGeocode = async (lat: number, lon: number) => {
+    try {
+      const result = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
+      if (result.length > 0) {
+        const place = result[0];
+        const address = [place.street || place.name, place.city || place.subregion || place.district].filter(Boolean).join(', ');
+        setCurrentAddress(address || 'Unknown Location');
+      }
+    } catch (error) {
+      console.log('Reverse geocode error:', error);
+      setCurrentAddress('Location unavailable');
+    }
+  };
 
   const initTrip = async (reverse: boolean = false) => {
     try {
@@ -453,17 +474,26 @@ const TripView = () => {
         </View>
 
         {trackingMode === 'Automatic' ? (
-          <View style={styles.mapContainer}>
-            {currentLocation ? (
-              <FreeMap
-                latitude={currentLocation.latitude}
-                longitude={currentLocation.longitude}
-                zoom={15}
-              />
-            ) : (
-              <View style={styles.mapLoading}>
-                <ActivityIndicator color="#FF6200" size="large" />
-                <Text style={{ color: '#888', marginTop: 10 }}>Acquiring GPS Signal...</Text>
+          <View>
+            <View style={styles.mapContainer}>
+              {currentLocation ? (
+                <FreeMap
+                  latitude={currentLocation.latitude}
+                  longitude={currentLocation.longitude}
+                  zoom={15}
+                />
+              ) : (
+                <View style={styles.mapLoading}>
+                  <ActivityIndicator color="#FF6200" size="large" />
+                  <Text style={{ color: '#888', marginTop: 10 }}>Acquiring GPS Signal...</Text>
+                </View>
+              )}
+            </View>
+            {currentLocation && (
+              <View style={styles.addressBox}>
+                <Ionicons name="location" size={20} color="#FF6200" />
+                <Text style={styles.addressLabel}>Your bus is now on: </Text>
+                <Text style={styles.addressValue} numberOfLines={1}>{currentAddress}</Text>
               </View>
             )}
           </View>
@@ -921,6 +951,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#111',
   },
+  addressBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#111', padding: 15, borderRadius: 12, marginTop: 15, borderWidth: 1, borderColor: '#222' },
+  addressLabel: { color: '#AAA', fontSize: 13, marginLeft: 8 },
+  addressValue: { color: '#FFF', fontSize: 14, fontWeight: 'bold', flex: 1 },
 });
 
 export default TripView;
