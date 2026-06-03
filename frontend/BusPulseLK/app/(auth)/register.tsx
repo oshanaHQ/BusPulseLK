@@ -1,0 +1,432 @@
+// app/(auth)/register.tsx
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  StatusBar,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { authService, AuthUser } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+
+const RegisterScreen = () => {
+  const [fullName, setFullName] = useState('');
+  const [emailOrPhone, setEmailOrPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<'Passenger' | 'Bus Owner' | 'Conductor/Driver' | null>(null);
+  const [loading, setLoading] = useState(false);
+  const auth = useAuth();
+
+  const roles = ['Passenger', 'Bus Owner', 'Conductor/Driver'] as const;
+
+  const goToLogin = () => {
+    router.push('/(auth)/login');
+  };
+
+  const handleRegister = async () => {
+    if (!fullName || !emailOrPhone || !password || !confirmPassword || !selectedRole) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    // Map frontend role labels to backend role strings
+    const roleMap: { [key: string]: 'Passenger' | 'BusOwner' | 'Driver' | 'Conductor' | 'Admin' } = {
+      'Passenger':          'Passenger',
+      'Bus Owner':          'BusOwner',
+      'Conductor/Driver':   'Driver',
+    };
+
+    setLoading(true);
+    try {
+      const response = await authService.register({
+        fullName,
+        email: emailOrPhone,
+        password,
+        role: roleMap[selectedRole] || 'Passenger',
+      });
+
+      // Auto-login: save token + user — RouteGuard redirects to dashboard
+      await auth.login(response.token, response.user as AuthUser);
+    } catch (error: any) {
+      Alert.alert('Registration Failed', error.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      {/* Force black status bar */}
+      <StatusBar 
+        backgroundColor="#000000" 
+        barStyle="light-content" 
+        translucent={false} // important on Android
+      />
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.keyboardAvoid}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView
+          style={{ flex: 1, backgroundColor: '#000000' }}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Main content wrapper – full black */}
+          <View style={styles.mainContent}>
+            <View style={styles.header}>
+              <View style={styles.busCircle}>
+                <Ionicons name="bus" size={48} color="#FFFFFF" />
+              </View>
+              <Text style={styles.title}>Create Account</Text>
+              <Text style={styles.subtitle}>Join BusPulse LK today.</Text>
+            </View>
+
+            <View style={styles.tabContainer}>
+              <TouchableOpacity style={styles.tab} onPress={goToLogin}>
+                <Text style={styles.tabText}>Login</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.tab, styles.activeTab]}>
+                <Text style={styles.tabTextActive}>Register</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <Text style={styles.label}>Full Name</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="person-outline" size={20} color="#888" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your full name"
+                  placeholderTextColor="#666"
+                  value={fullName}
+                  onChangeText={setFullName}
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <Text style={styles.label}>Email or Phone</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="person-outline" size={20} color="#888" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email or phone"
+                  placeholderTextColor="#666"
+                  value={emailOrPhone}
+                  onChangeText={setEmailOrPhone}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="lock-closed-outline" size={20} color="#888" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Create a password"
+                  placeholderTextColor="#666"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <Ionicons
+                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                    size={20}
+                    color="#888"
+                    style={styles.eyeIcon}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <Text style={styles.label}>Confirm Password</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="lock-closed-outline" size={20} color="#888" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Confirm your password"
+                  placeholderTextColor="#666"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                  <Ionicons
+                    name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
+                    size={20}
+                    color="#888"
+                    style={styles.eyeIcon}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.roleSection}>
+              <Text style={styles.label}>Select your role</Text>
+              {roles.map((role) => (
+                <TouchableOpacity
+                  key={role}
+                  style={[
+                    styles.roleOption,
+                    selectedRole === role && styles.roleOptionSelected,
+                  ]}
+                  onPress={() => setSelectedRole(role)}
+                >
+                  <View style={styles.radioOuter}>
+                    {selectedRole === role && <View style={styles.radioInner} />}
+                  </View>
+                  <Text
+                    style={[
+                      styles.roleText,
+                      selectedRole === role && styles.roleTextSelected,
+                    ]}
+                  >
+                    {role}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity 
+              style={styles.registerButton}
+              onPress={handleRegister}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.registerButtonText}>Register</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.guestButton}
+              onPress={() => auth.loginAsGuest()}
+            >
+              <Ionicons name="person-outline" size={20} color="#FF6200" style={{ marginRight: 10 }} />
+              <Text style={styles.guestButtonText}>Continue as Guest</Text>
+            </TouchableOpacity>
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>
+                Already have an account?{' '}
+                <Text style={styles.loginLink} onPress={goToLogin}>
+                  Login
+                </Text>
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </>
+  );
+};
+
+const styles = StyleSheet.create({
+  keyboardAvoid: {
+    flex: 1,
+    backgroundColor: '#000000', // crucial
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 60,
+  },
+  mainContent: {
+    flex: 1,
+    backgroundColor: '#000000',
+    paddingHorizontal: 24,
+  },
+  header: {
+    alignItems: 'center',
+    marginTop: 50,
+    marginBottom: 40,
+  },
+  busCircle: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#FF6200',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#AAAAAA',
+    fontWeight: '500',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#111111',
+    borderRadius: 30,
+    padding: 4,
+    marginBottom: 32,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 26,
+  },
+  activeTab: {
+    backgroundColor: '#222222',
+  },
+  tabText: {
+    color: '#888888',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  tabTextActive: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  inputWrapper: {
+    marginBottom: 20,
+  },
+  label: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#111111',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#222222',
+  },
+  inputIcon: {
+    marginLeft: 16,
+  },
+  input: {
+    flex: 1,
+    color: '#FFFFFF',
+    fontSize: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+  },
+  eyeIcon: {
+    marginRight: 16,
+  },
+  roleSection: {
+    marginBottom: 28,
+  },
+  roleOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#111111',
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  roleOptionSelected: {
+    backgroundColor: '#1A1A1A',
+    borderWidth: 1,
+    borderColor: '#FF6200',
+  },
+  radioOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#888888',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  radioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#FF6200',
+  },
+  roleText: {
+    color: '#AAAAAA',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  roleTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  registerButton: {
+    backgroundColor: '#FF6200',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  registerButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  guestButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    paddingVertical: 15,
+    marginBottom: 32,
+    borderWidth: 1.5,
+    borderColor: '#FF6200',
+    backgroundColor: 'transparent',
+  },
+  guestButtonText: {
+    color: '#FF6200',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  footer: {
+    alignItems: 'center',
+    paddingBottom: 40, // extra safe space
+  },
+  footerText: {
+    color: '#AAAAAA',
+    fontSize: 15,
+  },
+  loginLink: {
+    color: '#FF6200',
+    fontWeight: '600',
+  },
+});
+
+export default RegisterScreen;
