@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ── Base URL ──────────────────────────────────────────────────────────────────
 // Change this to your machine's local IP when testing on a physical device.
-export const API_BASE_URL = 'http://10.178.56.49:5251/api';
+export const API_BASE_URL = 'http://10.104.245.49:5251/api';
 
 // ── Token helper ──────────────────────────────────────────────────────────────
 
@@ -230,6 +230,8 @@ export const tripService = {
   getActiveByBus: (busId: number) => apiGet(`/trips/active/${busId}`),
   updateProgress: (id: number, townId: number) =>
     apiPost(`/trips/${id}/progress`, { townId }),
+  rollbackProgress: (id: number, townId: number) =>
+    apiDelete(`/trips/${id}/progress/${townId}`),
   updateLocation: (id: number, latitude: number, longitude: number) =>
     apiPost(`/trips/${id}/location`, { latitude, longitude }),
   end: (id: number) => apiPost(`/trips/${id}/end`, {}),

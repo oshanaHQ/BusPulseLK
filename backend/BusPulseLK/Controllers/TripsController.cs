@@ -273,6 +273,60 @@ namespace BusPulseLK.Controllers
             return Ok(new { message = "Progress updated." });
         }
 
+        // ────────────────────────────────────────────────────────────────────
+        // DELETE api/trips/{id}/progress/{townId}
+        // Rollback a town marked as passed
+        // ────────────────────────────────────────────────────────────────────
+        [HttpDelete("{id}/progress/{townId}")]
+        [Authorize]
+        public async Task<IActionResult> RollbackProgress(int id, int townId)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+
+            var trip = await _context.Trips
+                .Include(t => t.Timetable).ThenInclude(tt => tt.Bus)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (trip == null) return NotFound();
+
+            var busId = trip.Timetable.BusId;
+            var bus = trip.Timetable.Bus;
+
+            // Allow: driver, conductor, OR an approved regular passenger of this bus
+            bool isWorker = bus.DriverId == userId || bus.ConductorId == userId;
+            bool isRegularPassenger = false;
+
+            if (!isWorker)
+            {
+                isRegularPassenger = await _context.RegularPassengerRequests
+                    .AnyAsync(r => r.PassengerId == userId && r.BusId == busId && r.Status == "Approved");
+            }
+
+            if (!isWorker && !isRegularPassenger)
+                return Forbid();
+
+            var progress = await _context.TownProgresses
+                .FirstOrDefaultAsync(p => p.TripId == id && p.TownId == townId);
+
+            if (progress == null)
+                return Ok(new { message = "Town was not marked as passed." });
+
+            _context.TownProgresses.Remove(progress);
+            await _context.SaveChangesAsync(); // Save to reflect deletion in DB
+
+            // Update LastPassedTownId to the most recent one left
+            var lastProgress = await _context.TownProgresses
+                .Where(p => p.TripId == id)
+                .OrderByDescending(p => p.PassedAt)
+                .FirstOrDefaultAsync();
+
+            trip.LastPassedTownId = lastProgress?.TownId;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Progress rolled back." });
+        }
+
         [HttpPost("{id}/end")]
         [Authorize]
         public async Task<IActionResult> EndTrip(int id)

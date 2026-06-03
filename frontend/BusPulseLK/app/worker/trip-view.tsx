@@ -203,6 +203,27 @@ const TripView = () => {
       await connection.start();
       console.log('SignalR Connected');
       await connection.invoke('JoinBusGroup', busId.toString());
+      
+      connection.on('ReceiveBusStatus', (incomingBusId: string | number, status: any) => {
+        if (incomingBusId.toString() !== busId.toString()) return;
+
+        if (status.rollbackTownId) {
+           setCurrentStopIndex(prevIndex => Math.max(-1, prevIndex - 1));
+           return;
+        }
+        
+        const passedTownId = status.lastStopId || status.lastPassedTownId;
+        if (passedTownId) {
+          setStops((prevStops: Stop[]) => {
+            const index = prevStops.findIndex(s => s.town.id === passedTownId);
+            if (index !== -1) {
+               setCurrentStopIndex(prevIndex => Math.max(prevIndex, index));
+            }
+            return prevStops;
+          });
+        }
+      });
+
       connectionRef.current = connection;
     } catch (err) {
       console.log('SignalR Connection Error: ', err);
@@ -299,6 +320,54 @@ const TripView = () => {
     } finally {
       setUpdating(false);
     }
+  };
+
+  const rollbackStopPassed = async (index: number) => {
+    if (!tripId || updating) return;
+    const stop = stops[index];
+
+    Alert.alert(
+      'Rollback Progress',
+      `Undo marking "${stop.town.name}" as passed?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Rollback',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setUpdating(true);
+              await tripService.rollbackProgress(tripId, stop.town.id);
+
+              // Update local state
+              setCurrentStopIndex(index - 1);
+
+              // Broadcast via SignalR
+              if (connectionRef.current) {
+                await connectionRef.current.invoke('UpdateBusStatus', busId.toString(), {
+                  rollbackTownId: stop.town.id,
+                  timestamp: new Date().toISOString()
+                });
+              }
+
+              // Update notification
+              if (trackingMode !== 'Automatic' && index < stops.length) {
+                await showWorkerTripNotification(
+                  routeName as string,
+                  stops[index].town.name,
+                  tripId,
+                  stops[index].town.id
+                );
+              }
+            } catch (error: any) {
+              Alert.alert('Error', error.message);
+            } finally {
+              setUpdating(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleStartEmergency = async () => {
@@ -554,7 +623,19 @@ const TripView = () => {
                         </TouchableOpacity>
                       )}
                       {isPassed && (
-                        <Text style={styles.passedAt}>Passed</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                          <Text style={styles.passedAt}>Passed</Text>
+                          {index === currentStopIndex && (
+                            <TouchableOpacity
+                              onPress={() => rollbackStopPassed(index)}
+                              disabled={updating}
+                              style={styles.rollbackBtn}
+                            >
+                              <Ionicons name="arrow-undo" size={16} color="#D32F2F" />
+                              <Text style={styles.rollbackBtnText}>Undo</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
                       )}
                     </View>
                   </View>
@@ -818,6 +899,20 @@ const styles = StyleSheet.create({
   passedAt: {
     color: '#4CAF50',
     fontSize: 12,
+    fontWeight: 'bold',
+  },
+  rollbackBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#D32F2F22',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  rollbackBtnText: {
+    color: '#D32F2F',
+    fontSize: 11,
     fontWeight: 'bold',
   },
   footer: {
