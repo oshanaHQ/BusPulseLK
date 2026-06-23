@@ -246,5 +246,79 @@ namespace BusPulseLK.Controllers
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+        // ────────────────────────────────────────────────────────────────────
+        // GET api/user/admin-stats
+        // Admin only: Returns quick stats and recent activities for dashboard
+        // ────────────────────────────────────────────────────────────────────
+        [HttpGet("admin-stats")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAdminStats()
+        {
+            var totalBuses = await _context.Buses.CountAsync();
+            var totalPassengers = await _context.Users.CountAsync(u => u.Role == "Passenger");
+            var pendingApprovals = await _context.Buses.CountAsync(b => !b.IsActive);
+            var activeRoutes = await _context.Routes.CountAsync(r => r.IsActive);
+
+            var recentActivity = new List<object>();
+
+            // Fetch recent users (e.g., new owners)
+            var recentUsers = await _context.Users
+                .Where(u => u.Role == "BusOwner")
+                .OrderByDescending(u => u.CreatedAt)
+                .Take(2)
+                .Select(u => new
+                {
+                    Type = "NewOwner",
+                    Text = $"New Owner Registration: {u.FullName}",
+                    Time = u.CreatedAt,
+                    Icon = "person-add-outline"
+                })
+                .ToListAsync();
+            recentActivity.AddRange(recentUsers);
+
+            // Fetch recent buses added
+            var recentBuses = await _context.Buses
+                .OrderByDescending(b => b.CreatedAt)
+                .Take(2)
+                .Select(b => new
+                {
+                    Type = "BusAdded",
+                    Text = $"Bus Added: {b.NumberPlate}",
+                    Time = b.CreatedAt,
+                    Icon = "bus-outline"
+                })
+                .ToListAsync();
+            recentActivity.AddRange(recentBuses);
+
+            // Fetch recent routes
+            var recentRoutes = await _context.Routes
+                .Include(r => r.OriginTown)
+                .Include(r => r.DestinationTown)
+                .OrderByDescending(r => r.CreatedAt)
+                .Take(2)
+                .Select(r => new
+                {
+                    Type = "RouteUpdated",
+                    Text = $"Route Updated: {r.OriginTown.Name}-{r.DestinationTown.Name}",
+                    Time = r.CreatedAt,
+                    Icon = "git-branch-outline"
+                })
+                .ToListAsync();
+            recentActivity.AddRange(recentRoutes);
+
+            var sortedActivity = recentActivity.OrderByDescending(a => ((dynamic)a).Time).Take(4).ToList();
+
+            return Ok(new
+            {
+                Stats = new
+                {
+                    TotalBuses = totalBuses,
+                    TotalPassengers = totalPassengers,
+                    PendingApprovals = pendingApprovals,
+                    ActiveRoutes = activeRoutes
+                },
+                Activities = sortedActivity
+            });
+        }
     }
 }

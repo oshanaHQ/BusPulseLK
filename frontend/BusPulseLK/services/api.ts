@@ -195,6 +195,8 @@ export const userService = {
 
   changePassword: (currentPassword: string, newPassword: string) =>
     apiPut<{ message: string }>('/user/change-password', { currentPassword, newPassword }),
+
+  getAdminStats: () => apiGet('/user/admin-stats'),
 };
 
 // ── Route service ─────────────────────────────────────────────────────────────
