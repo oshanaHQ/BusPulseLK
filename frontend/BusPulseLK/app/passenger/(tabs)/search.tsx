@@ -277,6 +277,14 @@ const SearchScreen = () => {
               <Text style={[styles.input, !startTime && { color: '#666' }]}>
                 {startTime || 'Departure After'}
               </Text>
+              {startTime ? (
+                <TouchableOpacity
+                  onPress={() => { setStartTime(''); }}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="close-circle" size={20} color="#666" />
+                </TouchableOpacity>
+              ) : null}
             </TouchableOpacity>
 
             {showTimePicker && (
