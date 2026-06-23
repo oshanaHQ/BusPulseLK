@@ -175,9 +175,12 @@ const AdminDashboard = () => {
           <Text style={styles.tabLabel}>Routes</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem}>
-          <Ionicons name="document-text-outline" size={26} color="#AAAAAA" />
-          <Text style={styles.tabLabel}>Reports</Text>
+        <TouchableOpacity 
+          style={styles.tabItem}
+          onPress={() => router.push('./bus-approvals')}
+        >
+          <Ionicons name="checkmark-circle-outline" size={26} color="#AAAAAA" />
+          <Text style={styles.tabLabel}>Approvals</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.tabItem} onPress={() => router.push('/profile' as any)}>
