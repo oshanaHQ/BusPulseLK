@@ -149,7 +149,13 @@ const StaffDashboard = () => {
 
           {/* Action Grid */}
           <View style={styles.grid}>
-            <TouchableOpacity style={styles.card}>
+            <TouchableOpacity 
+              style={styles.card}
+              onPress={() => {
+                if (routes.length > 0) promptStartTrip(routes[0]);
+                else Alert.alert('No Routes', 'No routes assigned to start.');
+              }}
+            >
               <Ionicons name="play-outline" size={36} color="#FF6200" />
               <Text style={styles.cardText}>Start Trip</Text>
             </TouchableOpacity>
