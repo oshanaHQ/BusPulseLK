@@ -25,5 +25,8 @@ namespace BusPulseLK.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public bool IsVerified { get; set; } = false; // Verification for Bus Owners, Drivers, Conductors
+
+        /// <summary>0–15 index into the frontend's 16-icon avatar list.</summary>
+        public int AvatarId { get; set; } = 0;
     }
 }

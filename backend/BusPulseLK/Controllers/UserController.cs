@@ -80,9 +80,106 @@ namespace BusPulseLK.Controllers
         }
 
         // ────────────────────────────────────────────────────────────────────
+        // GET api/user/profile
+        // Returns the caller's own profile (all roles)
+        // ────────────────────────────────────────────────────────────────────
+        [HttpGet("profile")]
+        [Microsoft.AspNetCore.Authorization.Authorize]
+        public async Task<IActionResult> GetProfile()
+        {
+            var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdStr, out int userId))
+                return Unauthorized();
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound();
+
+            return Ok(new UserProfileDto
+            {
+                Id       = user.Id,
+                FullName = user.FullName,
+                Email    = user.Email,
+                Role     = user.Role,
+                AvatarId = user.AvatarId,
+            });
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // PUT api/user/update-profile
+        // Updates display name and/or avatar index (all roles)
+        // ────────────────────────────────────────────────────────────────────
+        [HttpPut("update-profile")]
+        [Microsoft.AspNetCore.Authorization.Authorize]
+        public async Task<IActionResult> UpdateProfile(UpdateProfileDto dto)
+        {
+            var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdStr, out int userId))
+                return Unauthorized();
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound();
+
+            if (!string.IsNullOrWhiteSpace(dto.FullName))
+            {
+                // Uniqueness check — exclude the current user
+                var nameTaken = await _context.Users
+                    .AnyAsync(u => u.Id != userId && u.FullName.ToLower() == dto.FullName.ToLower());
+                if (nameTaken)
+                {
+                    var random = new Random();
+                    string suggested = $"{dto.FullName}{random.Next(10, 999)}";
+                    return BadRequest(new { message = $"Name '{dto.FullName}' is already taken. Try '{suggested}'." });
+                }
+                user.FullName = dto.FullName;
+            }
+
+            if (dto.AvatarId.HasValue)
+                user.AvatarId = dto.AvatarId.Value;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new UserProfileDto
+            {
+                Id       = user.Id,
+                FullName = user.FullName,
+                Email    = user.Email,
+                Role     = user.Role,
+                AvatarId = user.AvatarId,
+            });
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // PUT api/user/change-password
+        // Verifies current password then sets new hashed password (all roles)
+        // ────────────────────────────────────────────────────────────────────
+        [HttpPut("change-password")]
+        [Microsoft.AspNetCore.Authorization.Authorize]
+        public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
+        {
+            var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdStr, out int userId))
+                return Unauthorized();
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound();
+
+            if (!VerifyPassword(dto.CurrentPassword, user.Password))
+                return BadRequest(new { message = "Current password is incorrect." });
+
+            if (dto.NewPassword == dto.CurrentPassword)
+                return BadRequest(new { message = "New password must be different from your current password." });
+
+            user.Password = HashPassword(dto.NewPassword);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Password changed successfully." });
+        }
+
+        // ────────────────────────────────────────────────────────────────────
         // GET api/user/staff?role=Driver&search=...
         // Admin or BusOwner search for staff
         // ────────────────────────────────────────────────────────────────────
+
         [HttpGet("staff")]
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,BusOwner")]
         public async Task<ActionResult<IEnumerable<object>>> SearchStaff(
@@ -148,6 +245,80 @@ namespace BusPulseLK.Controllers
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+        // ────────────────────────────────────────────────────────────────────
+        // GET api/user/admin-stats
+        // Admin only: Returns quick stats and recent activities for dashboard
+        // ────────────────────────────────────────────────────────────────────
+        [HttpGet("admin-stats")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAdminStats()
+        {
+            var totalBuses = await _context.Buses.CountAsync();
+            var totalPassengers = await _context.Users.CountAsync(u => u.Role == "Passenger");
+            var pendingApprovals = await _context.Buses.CountAsync(b => !b.IsActive);
+            var activeRoutes = await _context.Routes.CountAsync(r => r.IsActive);
+
+            var recentActivity = new List<object>();
+
+            // Fetch recent users (e.g., new owners)
+            var recentUsers = await _context.Users
+                .Where(u => u.Role == "BusOwner")
+                .OrderByDescending(u => u.CreatedAt)
+                .Take(2)
+                .Select(u => new
+                {
+                    Type = "NewOwner",
+                    Text = $"New Owner Registration: {u.FullName}",
+                    Time = u.CreatedAt,
+                    Icon = "person-add-outline"
+                })
+                .ToListAsync();
+            recentActivity.AddRange(recentUsers);
+
+            // Fetch recent buses added
+            var recentBuses = await _context.Buses
+                .OrderByDescending(b => b.CreatedAt)
+                .Take(2)
+                .Select(b => new
+                {
+                    Type = "BusAdded",
+                    Text = $"Bus Added: {b.NumberPlate}",
+                    Time = b.CreatedAt,
+                    Icon = "bus-outline"
+                })
+                .ToListAsync();
+            recentActivity.AddRange(recentBuses);
+
+            // Fetch recent routes
+            var recentRoutes = await _context.Routes
+                .Include(r => r.OriginTown)
+                .Include(r => r.DestinationTown)
+                .OrderByDescending(r => r.CreatedAt)
+                .Take(2)
+                .Select(r => new
+                {
+                    Type = "RouteUpdated",
+                    Text = $"Route Updated: {r.OriginTown.Name}-{r.DestinationTown.Name}",
+                    Time = r.CreatedAt,
+                    Icon = "git-branch-outline"
+                })
+                .ToListAsync();
+            recentActivity.AddRange(recentRoutes);
+
+            var sortedActivity = recentActivity.OrderByDescending(a => ((dynamic)a).Time).Take(4).ToList();
+
+            return Ok(new
+            {
+                Stats = new
+                {
+                    TotalBuses = totalBuses,
+                    TotalPassengers = totalPassengers,
+                    PendingApprovals = pendingApprovals,
+                    ActiveRoutes = activeRoutes
+                },
+                Activities = sortedActivity
+            });
         }
     }
 }

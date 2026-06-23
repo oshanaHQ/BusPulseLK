@@ -149,11 +149,20 @@ const StaffDashboard = () => {
 
           {/* Action Grid */}
           <View style={styles.grid}>
-            <TouchableOpacity style={styles.card}>
+            <TouchableOpacity 
+              style={styles.card}
+              onPress={() => {
+                if (routes.length > 0) promptStartTrip(routes[0]);
+                else Alert.alert('No Routes', 'No routes assigned to start.');
+              }}
+            >
               <Ionicons name="play-outline" size={36} color="#FF6200" />
               <Text style={styles.cardText}>Start Trip</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.card}>
+            <TouchableOpacity 
+              style={styles.card}
+              onPress={() => router.push({ pathname: '/worker/schedule' as any, params: bus ? { busId: bus.id } : undefined })}
+            >
               <Ionicons name="calendar-outline" size={36} color="#FF6200" />
               <Text style={styles.cardText}>Schedule</Text>
             </TouchableOpacity>
@@ -211,7 +220,10 @@ const StaffDashboard = () => {
           <Text style={[styles.tabLabel, { color: '#FF6200' }]}>Home</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem}>
+        <TouchableOpacity 
+          style={styles.tabItem}
+          onPress={() => router.push({ pathname: '/worker/schedule' as any, params: bus ? { busId: bus.id } : undefined })}
+        >
           <Ionicons name="calendar-outline" size={26} color="#AAAAAA" />
           <Text style={styles.tabLabel}>Schedule</Text>
         </TouchableOpacity>
@@ -224,7 +236,7 @@ const StaffDashboard = () => {
           <Text style={styles.tabLabel}>Announce</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem}>
+        <TouchableOpacity style={styles.tabItem} onPress={() => router.push('/profile' as any)}>
           <Ionicons name="person-outline" size={26} color="#AAAAAA" />
           <Text style={styles.tabLabel}>Profile</Text>
         </TouchableOpacity>
