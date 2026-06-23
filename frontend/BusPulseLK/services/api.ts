@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ── Base URL ──────────────────────────────────────────────────────────────────
 // Change this to your machine's local IP when testing on a physical device.
-export const API_BASE_URL = 'http://10.104.245.49:5251/api';
+export const API_BASE_URL = 'http://10.182.31.49:5251/api';
 
 // ── Token helper ──────────────────────────────────────────────────────────────
 
@@ -117,6 +117,15 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   isRegularPassenger?: boolean;
+  avatarId?: number;
+}
+
+export interface UserProfile {
+  id: number;
+  fullName: string;
+  email: string;
+  role: string;
+  avatarId: number;
 }
 
 export interface LoginRequest {
@@ -177,6 +186,15 @@ export const authService = {
 export const userService = {
   searchStaff: (role: 'Driver' | 'Conductor', search?: string) =>
     apiGet(`/user/staff?role=${role}${search ? `&search=${search}` : ''}`),
+
+  getProfile: () =>
+    apiGet<UserProfile>('/user/profile'),
+
+  updateProfile: (data: { fullName?: string; avatarId?: number }) =>
+    apiPut<UserProfile>('/user/update-profile', data),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    apiPut<{ message: string }>('/user/change-password', { currentPassword, newPassword }),
 };
 
 // ── Route service ─────────────────────────────────────────────────────────────

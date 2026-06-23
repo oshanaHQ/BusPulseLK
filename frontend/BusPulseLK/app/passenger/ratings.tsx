@@ -17,7 +17,7 @@ const RatingsScreen = () => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.appTitle}>Bus Ratings</Text>
-        <TouchableOpacity style={styles.profileIcon}>
+        <TouchableOpacity style={styles.profileIcon} onPress={() => router.push('/profile' as any)}>
           <Ionicons name="person-circle-outline" size={32} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
@@ -108,15 +108,9 @@ const RatingsScreen = () => {
           <Text style={styles.tabLabel}>Search</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.tabItem}
-          onPress={() => router.push('./favorites')}
-        >
-          <Ionicons name="heart-outline" size={28} color="#AAAAAA" />
-          <Text style={styles.tabLabel}>Favorite</Text>
-        </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem}>
+
+        <TouchableOpacity style={styles.tabItem} onPress={() => router.push('/profile' as any)}>
           <Ionicons name="person-outline" size={28} color="#AAAAAA" />
           <Text style={styles.tabLabel}>Profile</Text>
         </TouchableOpacity>

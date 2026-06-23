@@ -80,9 +80,106 @@ namespace BusPulseLK.Controllers
         }
 
         // ────────────────────────────────────────────────────────────────────
+        // GET api/user/profile
+        // Returns the caller's own profile (all roles)
+        // ────────────────────────────────────────────────────────────────────
+        [HttpGet("profile")]
+        [Microsoft.AspNetCore.Authorization.Authorize]
+        public async Task<IActionResult> GetProfile()
+        {
+            var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdStr, out int userId))
+                return Unauthorized();
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound();
+
+            return Ok(new UserProfileDto
+            {
+                Id       = user.Id,
+                FullName = user.FullName,
+                Email    = user.Email,
+                Role     = user.Role,
+                AvatarId = user.AvatarId,
+            });
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // PUT api/user/update-profile
+        // Updates display name and/or avatar index (all roles)
+        // ────────────────────────────────────────────────────────────────────
+        [HttpPut("update-profile")]
+        [Microsoft.AspNetCore.Authorization.Authorize]
+        public async Task<IActionResult> UpdateProfile(UpdateProfileDto dto)
+        {
+            var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdStr, out int userId))
+                return Unauthorized();
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound();
+
+            if (!string.IsNullOrWhiteSpace(dto.FullName))
+            {
+                // Uniqueness check — exclude the current user
+                var nameTaken = await _context.Users
+                    .AnyAsync(u => u.Id != userId && u.FullName.ToLower() == dto.FullName.ToLower());
+                if (nameTaken)
+                {
+                    var random = new Random();
+                    string suggested = $"{dto.FullName}{random.Next(10, 999)}";
+                    return BadRequest(new { message = $"Name '{dto.FullName}' is already taken. Try '{suggested}'." });
+                }
+                user.FullName = dto.FullName;
+            }
+
+            if (dto.AvatarId.HasValue)
+                user.AvatarId = dto.AvatarId.Value;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new UserProfileDto
+            {
+                Id       = user.Id,
+                FullName = user.FullName,
+                Email    = user.Email,
+                Role     = user.Role,
+                AvatarId = user.AvatarId,
+            });
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // PUT api/user/change-password
+        // Verifies current password then sets new hashed password (all roles)
+        // ────────────────────────────────────────────────────────────────────
+        [HttpPut("change-password")]
+        [Microsoft.AspNetCore.Authorization.Authorize]
+        public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
+        {
+            var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdStr, out int userId))
+                return Unauthorized();
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound();
+
+            if (!VerifyPassword(dto.CurrentPassword, user.Password))
+                return BadRequest(new { message = "Current password is incorrect." });
+
+            if (dto.NewPassword == dto.CurrentPassword)
+                return BadRequest(new { message = "New password must be different from your current password." });
+
+            user.Password = HashPassword(dto.NewPassword);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Password changed successfully." });
+        }
+
+        // ────────────────────────────────────────────────────────────────────
         // GET api/user/staff?role=Driver&search=...
         // Admin or BusOwner search for staff
         // ────────────────────────────────────────────────────────────────────
+
         [HttpGet("staff")]
         [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,BusOwner")]
         public async Task<ActionResult<IEnumerable<object>>> SearchStaff(

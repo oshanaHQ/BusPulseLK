@@ -224,7 +224,7 @@ const StaffDashboard = () => {
           <Text style={styles.tabLabel}>Announce</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem}>
+        <TouchableOpacity style={styles.tabItem} onPress={() => router.push('/profile' as any)}>
           <Ionicons name="person-outline" size={26} color="#AAAAAA" />
           <Text style={styles.tabLabel}>Profile</Text>
         </TouchableOpacity>

@@ -314,4 +314,38 @@ namespace BusPulseLK.Models
         public string OperatingDays { get; set; } = null!;
         public List<StationTimeDto> StationTimes { get; set; } = new();
     }
+
+    // ── User Profile DTOs ─────────────────────────────────────────────────────
+
+    /// <summary>Returned by GET /api/user/profile.</summary>
+    public class UserProfileDto
+    {
+        public int    Id       { get; set; }
+        public string FullName { get; set; } = "";
+        public string Email    { get; set; } = "";
+        public string Role     { get; set; } = "";
+        public int    AvatarId { get; set; }
+    }
+
+    /// <summary>Body for PUT /api/user/update-profile.</summary>
+    public class UpdateProfileDto
+    {
+        [StringLength(100, MinimumLength = 2)]
+        public string? FullName { get; set; }
+
+        [Range(0, 15)]
+        public int? AvatarId { get; set; }
+    }
+
+    /// <summary>Body for PUT /api/user/change-password.</summary>
+    public class ChangePasswordDto
+    {
+        [Required]
+        public string CurrentPassword { get; set; } = "";
+
+        [Required]
+        [MinLength(6, ErrorMessage = "New password must be at least 6 characters.")]
+        public string NewPassword { get; set; } = "";
+    }
 }
+

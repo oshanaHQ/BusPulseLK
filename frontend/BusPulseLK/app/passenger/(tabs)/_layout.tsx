@@ -61,9 +61,15 @@ export default function TabLayout() {
       <Tabs.Screen
         name="favorites"
         options={{
-          title: 'Saved',
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="heart" size={size} color={color} />
+            <Ionicons name="person-outline" size={size} color={color} />
           ),
           ...(isGuest ? { tabBarButton: () => null } : {}),
         }}

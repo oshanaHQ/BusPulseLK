@@ -16,6 +16,7 @@ interface AuthContextValue extends AuthState {
   login: (token: string, user: AuthUser) => Promise<void>;
   loginAsGuest: () => void;
   logout: () => Promise<void>;
+  updateUser: (partial: Partial<AuthUser>) => void;
   isAuthenticated: boolean;
 }
 
@@ -88,6 +89,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ token: null, user: null, isLoading: false, isGuest: false });
   };
 
+  // Partially update the in-memory user (name, avatarId, etc.) and persist
+  const updateUser = (partial: Partial<AuthUser>) => {
+    setState(prev => {
+      if (!prev.user) return prev;
+      const updated = { ...prev.user, ...partial };
+      AsyncStorage.setItem(USER_KEY, JSON.stringify(updated)).catch(() => {});
+      return { ...prev, user: updated };
+    });
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -96,6 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         loginAsGuest,
         logout,
+        updateUser,
       }}
     >
       {children}
