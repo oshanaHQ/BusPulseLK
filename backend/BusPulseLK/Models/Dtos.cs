@@ -347,5 +347,34 @@ namespace BusPulseLK.Models
         [MinLength(6, ErrorMessage = "New password must be at least 6 characters.")]
         public string NewPassword { get; set; } = "";
     }
+
+    // ── Forgot Password DTOs ────────────────────────────────────────────────
+    public class ForgotPasswordDto
+    {
+        [Required, EmailAddress]
+        public string Email { get; set; } = "";
+    }
+
+    public class VerifyResetCodeDto
+    {
+        [Required, EmailAddress]
+        public string Email { get; set; } = "";
+        
+        [Required]
+        public string Code { get; set; } = "";
+    }
+
+    public class ResetPasswordDto
+    {
+        [Required, EmailAddress]
+        public string Email { get; set; } = "";
+        
+        [Required]
+        public string Code { get; set; } = "";
+        
+        [Required]
+        [MinLength(6, ErrorMessage = "New password must be at least 6 characters.")]
+        public string NewPassword { get; set; } = "";
+    }
 }
 

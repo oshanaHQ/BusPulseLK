@@ -12,6 +12,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<BusPulseLK.Services.IEmailService, BusPulseLK.Services.EmailService>();
 
 // Add CORS
 builder.Services.AddCors(options =>
