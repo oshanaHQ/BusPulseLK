@@ -12,12 +12,13 @@ import {
   Modal,
   Platform,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { searchService, townService, favoriteService } from '../../../services/api';
+import { searchService, townService, favoriteService, timetableService } from '../../../services/api';
 import { getActiveTracking, cancelTrackingNotification, clearActiveTracking } from '../../../services/notificationService';
 import RatingsModal from '../../../components/RatingsModal';
 import { useAuth } from '../../../context/AuthContext';
@@ -46,6 +47,12 @@ const SearchScreen = () => {
   const [ratingsModalVisible, setRatingsModalVisible] = useState(false);
   const [selectedBusId, setSelectedBusId] = useState<number | null>(null);
   const [selectedBusName, setSelectedBusName] = useState<string>('');
+
+  // Schedule Modal State
+  const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [scheduleData, setScheduleData] = useState<any>(null);
+  const [scheduleBusName, setScheduleBusName] = useState('');
 
   useEffect(() => {
     loadTowns();
@@ -105,12 +112,34 @@ const SearchScreen = () => {
     } catch (error) {}
   };
 
+  const fetchSchedule = async (timetableId: number, busName: string) => {
+    setScheduleBusName(busName);
+    setScheduleModalVisible(true);
+    setScheduleLoading(true);
+    setScheduleData(null);
+    try {
+      const data = await timetableService.getById(timetableId) as any;
+      setScheduleData(data);
+    } catch {
+      Alert.alert('Error', 'Could not load schedule.');
+      setScheduleModalVisible(false);
+    } finally {
+      setScheduleLoading(false);
+    }
+  };
+
   const renderBusItem = ({ item }: { item: any }) => (
     <View style={styles.busCard}>
       <View style={styles.cardHeader}>
         <View>
           <Text style={styles.routeNumber}>{item.route.routeNumber}</Text>
           <Text style={styles.busName}>{item.bus.name || item.bus.numberPlate}</Text>
+          {item.isCurrentlyRunning && (
+            <View style={styles.runningBadge}>
+              <View style={styles.runningDot} />
+              <Text style={styles.runningText}>Currently Running</Text>
+            </View>
+          )}
         </View>
         {!isGuest && (
           <TouchableOpacity onPress={() => toggleFavorite(item.bus.id)}>
@@ -168,6 +197,17 @@ const SearchScreen = () => {
           <Text style={styles.trackBtnText}>Live Track</Text>
         </TouchableOpacity>
 
+        {/* View Schedule button – only for non-running buses */}
+        {!item.isCurrentlyRunning && (
+          <TouchableOpacity
+            style={[styles.trackBtn, { marginTop: 8, backgroundColor: '#0D1F0D' }]}
+            onPress={() => fetchSchedule(item.timetableId, item.bus.name || item.bus.numberPlate)}
+          >
+            <Ionicons name="calendar-outline" size={18} color="#4CAF50" />
+            <Text style={[styles.trackBtnText, { color: '#4CAF50' }]}>View Schedule</Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity 
           style={[styles.trackBtn, { marginTop: 8, backgroundColor: '#1A1A1A' }]}
           onPress={() => {
@@ -191,6 +231,66 @@ const SearchScreen = () => {
         busId={selectedBusId || 0}
         busName={selectedBusName}
       />
+
+      {/* Schedule Modal */}
+      <Modal visible={scheduleModalVisible} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle} numberOfLines={1}>{scheduleBusName}</Text>
+              <TouchableOpacity onPress={() => setScheduleModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+            <Text style={{ color: '#666', fontSize: 13, marginBottom: 16 }}>Scheduled Station Times</Text>
+            {scheduleLoading ? (
+              <ActivityIndicator color="#4CAF50" size="large" style={{ marginTop: 40 }} />
+            ) : scheduleData ? (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Departure time header */}
+                <View style={styles.scheduleHeader}>
+                  <Ionicons name="time-outline" size={16} color="#4CAF50" />
+                  <Text style={styles.scheduleHeaderText}>
+                    Departs: {scheduleData.departureTime}  •  {scheduleData.operatingDays}
+                  </Text>
+                </View>
+                {/* Route */}
+                <Text style={styles.scheduleRoute}>
+                  {scheduleData.route?.originTown} → {scheduleData.route?.destinationTown}
+                </Text>
+                {/* Station times list */}
+                {scheduleData.stationTimes && scheduleData.stationTimes.length > 0 ? (
+                  scheduleData.stationTimes
+                    .slice()
+                    .sort((a: any, b: any) => a.expectedTime.localeCompare(b.expectedTime))
+                    .map((st: any, i: number) => (
+                      <View key={i} style={styles.scheduleRow}>
+                        <View style={styles.scheduleTimeline}>
+                          <View style={styles.scheduleCircle} />
+                          {i < scheduleData.stationTimes.length - 1 && <View style={styles.scheduleLine} />}
+                        </View>
+                        <View style={styles.scheduleRowContent}>
+                          <Text style={styles.scheduleTime}>{st.expectedTime}</Text>
+                          {st.isReturnJourney && (
+                            <View style={styles.returnBadge}>
+                              <Text style={styles.returnBadgeText}>Return</Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    ))
+                ) : (
+                  <View style={{ alignItems: 'center', marginTop: 30 }}>
+                    <Ionicons name="calendar-outline" size={48} color="#333" />
+                    <Text style={{ color: '#555', marginTop: 12, fontSize: 14 }}>No detailed station times available</Text>
+                  </View>
+                )}
+              </ScrollView>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+
       <StatusBar barStyle="light-content" />
 
       {/* Guest Mode Banner */}
@@ -444,6 +544,9 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   routeNumber: { color: '#FF6200', fontSize: 18, fontWeight: 'bold' },
   busName: { color: '#FFF', fontSize: 15, fontWeight: '600' },
+  runningBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FF620022', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10, marginTop: 6, alignSelf: 'flex-start' },
+  runningDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF6200', marginRight: 5 },
+  runningText: { color: '#FF6200', fontSize: 11, fontWeight: 'bold' },
   routeInfo: { marginTop: 10, gap: 4 },
   towns: { color: '#FFF', fontSize: 14 },
   timeRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -461,7 +564,18 @@ const styles = StyleSheet.create({
   modalSearchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#000', borderRadius: 12, paddingHorizontal: 15, height: 48, marginBottom: 15, borderWidth: 1, borderColor: '#222' },
   modalSearchInput: { flex: 1, color: '#FFF', fontSize: 16 },
   townItem: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#222' },
-  townItemText: { color: '#FFF', fontSize: 17 }
+  townItemText: { color: '#FFF', fontSize: 17 },
+  scheduleHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#0D1F0D', borderRadius: 10, padding: 12, marginBottom: 8 },
+  scheduleHeaderText: { color: '#4CAF50', fontSize: 14, fontWeight: '600', flex: 1 },
+  scheduleRoute: { color: '#AAA', fontSize: 14, marginBottom: 20, paddingHorizontal: 4 },
+  scheduleRow: { flexDirection: 'row', marginBottom: 0, minHeight: 50 },
+  scheduleTimeline: { width: 28, alignItems: 'center' },
+  scheduleCircle: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#4CAF50', marginTop: 4 },
+  scheduleLine: { width: 2, flex: 1, backgroundColor: '#2A2A2A', marginTop: 2 },
+  scheduleRowContent: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', paddingBottom: 16, gap: 10 },
+  scheduleTime: { color: '#FFF', fontSize: 16, fontWeight: '600' },
+  returnBadge: { backgroundColor: '#1A0D30', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  returnBadgeText: { color: '#9C7FFF', fontSize: 11, fontWeight: 'bold' },
 });
 
 export default SearchScreen;

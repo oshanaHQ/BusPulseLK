@@ -56,12 +56,10 @@ namespace BusPulseLK.Controllers
             // 3. Filter by Origin & Destination
             if (originTownId.HasValue && destinationTownId.HasValue)
             {
-                // This is a bit complex: find routes that have BOTH towns, and origin comes before destination
+                // This is a bit complex: find routes that have BOTH towns
                 query = query.Where(t => 
                     t.Route.Stops.Any(s => s.TownId == originTownId.Value) &&
-                    t.Route.Stops.Any(s => s.TownId == destinationTownId.Value) &&
-                    t.Route.Stops.Where(s => s.TownId == originTownId.Value).Select(s => s.StopOrder).FirstOrDefault() <
-                    t.Route.Stops.Where(s => s.TownId == destinationTownId.Value).Select(s => s.StopOrder).FirstOrDefault()
+                    t.Route.Stops.Any(s => s.TownId == destinationTownId.Value)
                 );
             }
             else if (originTownId.HasValue)
@@ -80,31 +78,58 @@ namespace BusPulseLK.Controllers
                 query = query.Where(t => t.DepartureTime >= time);
             }
 
-            var results = await query
-                .OrderBy(t => t.DepartureTime)
-                .Select(t => new SearchResultDto
+            var queryResults = await query
+                .Select(t => new 
                 {
-                    TimetableId   = t.Id,
-                    DepartureTime = t.DepartureTime.ToString(@"hh\:mm"),
-                    OperatingDays = t.OperatingDays,
+                    Timetable = t,
+                    IsRunning = _context.Trips.Any(tr => tr.TimetableId == t.Id && tr.Status == "Started"),
+                    OriginOrder = originTownId.HasValue ? t.Route.Stops.Where(s => s.TownId == originTownId.Value).Select(s => s.StopOrder).FirstOrDefault() : 0,
+                    DestOrder = destinationTownId.HasValue ? t.Route.Stops.Where(s => s.TownId == destinationTownId.Value).Select(s => s.StopOrder).FirstOrDefault() : 0,
+                    IsReturnTimetable = t.StationTimes.Any(st => st.IsReturnJourney),
+                    StationCount = t.StationTimes.Count
+                })
+                .ToListAsync();
+
+            // Filter by direction in-memory
+            if (originTownId.HasValue && destinationTownId.HasValue)
+            {
+                queryResults = queryResults.Where(x => 
+                    // If no station times exist, show it for both directions to avoid hiding valid buses
+                    x.StationCount == 0 ||
+                    // Forward Request: Origin comes before Destination
+                    (x.OriginOrder < x.DestOrder && !x.IsReturnTimetable) ||
+                    // Return Request: Origin comes after Destination
+                    (x.OriginOrder > x.DestOrder && x.IsReturnTimetable)
+                ).ToList();
+            }
+
+            var results = queryResults
+                .OrderByDescending(x => x.IsRunning)
+                .ThenBy(x => x.Timetable.DepartureTime)
+                .Select(x => new SearchResultDto
+                {
+                    TimetableId   = x.Timetable.Id,
+                    DepartureTime = x.Timetable.DepartureTime.ToString(@"hh\:mm"),
+                    OperatingDays = x.Timetable.OperatingDays,
                     Bus = new BusSummaryDto
                     {
-                        Id          = t.Bus.Id,
-                        NumberPlate = t.Bus.NumberPlate,
-                        Name        = t.Bus.Name,
-                        BusType     = t.Bus.BusType
+                        Id          = x.Timetable.Bus.Id,
+                        NumberPlate = x.Timetable.Bus.NumberPlate,
+                        Name        = x.Timetable.Bus.Name,
+                        BusType     = x.Timetable.Bus.BusType
                     },
                     Route = new RouteSummaryDto
                     {
-                        Id          = t.Route.Id,
-                        Name        = t.Route.Name,
-                        RouteNumber = t.Route.RouteNumber,
-                        OriginTown  = t.Route.OriginTown.Name,
-                        DestinationTown = t.Route.DestinationTown.Name
+                        Id          = x.Timetable.Route.Id,
+                        Name        = x.Timetable.Route.Name,
+                        RouteNumber = x.Timetable.Route.RouteNumber,
+                        OriginTown  = x.Timetable.Route.OriginTown.Name,
+                        DestinationTown = x.Timetable.Route.DestinationTown.Name
                     },
-                    IsFavorite = userId != null && _context.Favorites.Any(f => f.PassengerId == userId && f.BusId == t.BusId)
+                    IsFavorite = userId != null && _context.Favorites.Any(f => f.PassengerId == userId && f.BusId == x.Timetable.BusId),
+                    IsCurrentlyRunning = x.IsRunning
                 })
-                .ToListAsync();
+                .ToList();
 
             return Ok(results);
         }
@@ -118,5 +143,6 @@ namespace BusPulseLK.Controllers
         public BusSummaryDto Bus { get; set; } = null!;
         public RouteSummaryDto Route { get; set; } = null!;
         public bool IsFavorite { get; set; }
+        public bool IsCurrentlyRunning { get; set; }
     }
 }
