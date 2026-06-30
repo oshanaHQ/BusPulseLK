@@ -39,6 +39,7 @@ const SearchScreen = () => {
   const [loading, setLoading] = useState(false);
   const [towns, setTowns] = useState<any[]>([]);
   const [townModalVisible, setTownModalVisible] = useState(false);
+  const [townSearchQuery, setTownSearchQuery] = useState('');
   const [selectingFor, setSelectingFor] = useState<'origin' | 'destination'>('origin');
 
   // Ratings Modal State
@@ -233,7 +234,7 @@ const SearchScreen = () => {
             <View style={styles.destinationInputs}>
               <TouchableOpacity 
                 style={styles.townPicker}
-                onPress={() => { setSelectingFor('origin'); setTownModalVisible(true); }}
+                onPress={() => { setSelectingFor('origin'); setTownSearchQuery(''); setTownModalVisible(true); }}
               >
                 <Ionicons name="location-outline" size={20} color="#FF6200" />
                 <Text style={styles.pickerText}>
@@ -242,7 +243,7 @@ const SearchScreen = () => {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.townPicker}
-                onPress={() => { setSelectingFor('destination'); setTownModalVisible(true); }}
+                onPress={() => { setSelectingFor('destination'); setTownSearchQuery(''); setTownModalVisible(true); }}
               >
                 <Ionicons name="navigate-outline" size={20} color="#FF6200" />
                 <Text style={styles.pickerText}>
@@ -332,8 +333,26 @@ const SearchScreen = () => {
                 <Ionicons name="close" size={24} color="#FFF" />
               </TouchableOpacity>
             </View>
+            
+            <View style={styles.modalSearchContainer}>
+              <Ionicons name="search" size={20} color="#666" style={{ marginRight: 10 }} />
+              <TextInput 
+                style={styles.modalSearchInput}
+                placeholder="Search city name..."
+                placeholderTextColor="#666"
+                value={townSearchQuery}
+                onChangeText={setTownSearchQuery}
+                autoFocus={true}
+              />
+              {townSearchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setTownSearchQuery('')}>
+                  <Ionicons name="close-circle" size={20} color="#666" />
+                </TouchableOpacity>
+              )}
+            </View>
+
             <FlatList
-              data={towns}
+              data={towns.filter(t => t.name.toLowerCase().includes(townSearchQuery.toLowerCase()))}
               keyExtractor={(item) => item.id.toString()}
               renderItem={({ item }) => (
                 <TouchableOpacity 
@@ -437,8 +456,10 @@ const styles = StyleSheet.create({
   emptyText: { color: '#444', marginTop: 15, fontSize: 14 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: '#111', borderTopLeftRadius: 25, borderTopRightRadius: 25, height: '70%', padding: 20 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   modalTitle: { color: '#FFF', fontSize: 20, fontWeight: 'bold' },
+  modalSearchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#000', borderRadius: 12, paddingHorizontal: 15, height: 48, marginBottom: 15, borderWidth: 1, borderColor: '#222' },
+  modalSearchInput: { flex: 1, color: '#FFF', fontSize: 16 },
   townItem: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#222' },
   townItemText: { color: '#FFF', fontSize: 17 }
 });
