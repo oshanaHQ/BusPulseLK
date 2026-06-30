@@ -111,6 +111,12 @@ const SearchScreen = () => {
         <View>
           <Text style={styles.routeNumber}>{item.route.routeNumber}</Text>
           <Text style={styles.busName}>{item.bus.name || item.bus.numberPlate}</Text>
+          {item.isCurrentlyRunning && (
+            <View style={styles.runningBadge}>
+              <View style={styles.runningDot} />
+              <Text style={styles.runningText}>Currently Running</Text>
+            </View>
+          )}
         </View>
         {!isGuest && (
           <TouchableOpacity onPress={() => toggleFavorite(item.bus.id)}>
@@ -444,6 +450,9 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   routeNumber: { color: '#FF6200', fontSize: 18, fontWeight: 'bold' },
   busName: { color: '#FFF', fontSize: 15, fontWeight: '600' },
+  runningBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FF620022', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10, marginTop: 6, alignSelf: 'flex-start' },
+  runningDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF6200', marginRight: 5 },
+  runningText: { color: '#FF6200', fontSize: 11, fontWeight: 'bold' },
   routeInfo: { marginTop: 10, gap: 4 },
   towns: { color: '#FFF', fontSize: 14 },
   timeRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
