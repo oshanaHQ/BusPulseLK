@@ -36,6 +36,7 @@ const LiveTrackingScreen = () => {
   const [timetable, setTimetable] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<any>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   
   // Rating/Report states
   const [ratingModal, setRatingModal] = useState(false);
@@ -93,6 +94,15 @@ const LiveTrackingScreen = () => {
         emergencyRoute: data.emergencyRoute,
       };
       setStatus(initialStatus);
+
+      // Fetch passenger's own location once (non-blocking)
+      Location.requestForegroundPermissionsAsync().then(({ status: locStatus }) => {
+        if (locStatus === 'granted') {
+          Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+            .then(loc => setUserLocation({ lat: loc.coords.latitude, lng: loc.coords.longitude }))
+            .catch(() => {});
+        }
+      }).catch(() => {});
 
       // Save tracking session and show initial notification
       const busName = (ttData as any)?.bus?.name || (ttData as any)?.bus?.numberPlate || `Bus ${busId}`;
@@ -274,7 +284,9 @@ const LiveTrackingScreen = () => {
                       <FreeMap 
                         latitude={status.latitude} 
                         longitude={status.longitude} 
-                        zoom={15} 
+                        zoom={14} 
+                        userLatitude={userLocation?.lat}
+                        userLongitude={userLocation?.lng}
                       />
                     </View>
                     <View style={styles.addressBox}>
