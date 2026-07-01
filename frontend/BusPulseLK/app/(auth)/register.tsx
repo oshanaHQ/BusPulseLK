@@ -41,6 +41,16 @@ const RegisterScreen = () => {
       return;
     }
 
+    if (!emailOrPhone.includes('@') || !emailOrPhone.includes('.')) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address (e.g. name@example.com)');
+      return;
+    }
+
+    if (password.length < 8) {
+      Alert.alert('Weak Password', 'Password must be at least 8 characters long');
+      return;
+    }
+
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
       return;
