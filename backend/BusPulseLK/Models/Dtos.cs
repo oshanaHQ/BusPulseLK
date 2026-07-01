@@ -344,7 +344,7 @@ namespace BusPulseLK.Models
         public string CurrentPassword { get; set; } = "";
 
         [Required]
-        [MinLength(6, ErrorMessage = "New password must be at least 6 characters.")]
+        [MinLength(8, ErrorMessage = "New password must be at least 8 characters.")]
         public string NewPassword { get; set; } = "";
     }
 
@@ -373,7 +373,7 @@ namespace BusPulseLK.Models
         public string Code { get; set; } = "";
         
         [Required]
-        [MinLength(6, ErrorMessage = "New password must be at least 6 characters.")]
+        [MinLength(8, ErrorMessage = "New password must be at least 8 characters.")]
         public string NewPassword { get; set; } = "";
     }
 }

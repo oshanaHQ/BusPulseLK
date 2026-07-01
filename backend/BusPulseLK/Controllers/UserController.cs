@@ -137,6 +137,9 @@ namespace BusPulseLK.Controllers
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword(ResetPasswordDto dto)
         {
+            if (dto.NewPassword == null || dto.NewPassword.Length < 8)
+                return BadRequest(new { message = "Password must be at least 8 characters long." });
+
             if (_cache.TryGetValue($"PwdReset_{dto.Email}", out string? cachedCode))
             {
                 if (cachedCode == dto.Code)
