@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ── Base URL ──────────────────────────────────────────────────────────────────
 // Change this to your machine's local IP when testing on a physical device.
-export const API_BASE_URL = 'http://10.182.31.49:5251/api';
+export const API_BASE_URL = 'http://192.168.8.108:5251/api';
 
 // ── Token helper ──────────────────────────────────────────────────────────────
 
