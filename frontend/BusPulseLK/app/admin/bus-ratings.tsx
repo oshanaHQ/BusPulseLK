@@ -94,7 +94,7 @@ const AdminBusRatingsScreen = () => {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
       <RatingsModal
         visible={modalVisible}

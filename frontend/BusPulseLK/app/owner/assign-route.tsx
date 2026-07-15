@@ -4,7 +4,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   TouchableOpacity,
   Modal,
@@ -16,6 +15,7 @@ import {
   RefreshControl,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -55,6 +55,7 @@ interface TimetableEntry {
 }
 
 const AssignRoute = () => {
+  const insets = useSafeAreaInsets();
   const [entries, setEntries] = useState<TimetableEntry[]>([]);
   const [buses, setBuses] = useState<Bus[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
@@ -263,7 +264,7 @@ const AssignRoute = () => {
   const selectedRoute = routes.find(r => r.id === selectedRouteId);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
       
       <View style={styles.header}>
@@ -507,7 +508,7 @@ const AssignRoute = () => {
           </View>
         </Modal>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 

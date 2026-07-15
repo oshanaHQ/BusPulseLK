@@ -9,9 +9,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
 const RatingsScreen = () => {
+  const insets = useSafeAreaInsets();
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -91,7 +93,7 @@ const RatingsScreen = () => {
       </ScrollView>
 
       {/* Bottom Tab Bar */}
-      <View style={styles.bottomTab}>
+      <View style={[styles.bottomTab, { paddingBottom: insets.bottom > 0 ? insets.bottom : 8 }]}>
         <TouchableOpacity 
           style={styles.tabItem}
           onPress={() => router.push('./dashboard')}
@@ -196,8 +198,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
     borderTopWidth: 1,
     borderTopColor: '#222222',
-    paddingVertical: 8,
+    paddingTop: 8,
     paddingHorizontal: 20,
+    paddingBottom: 8,
     justifyContent: 'space-around',
   },
   tabItem: {

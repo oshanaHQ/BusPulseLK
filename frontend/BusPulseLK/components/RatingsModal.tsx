@@ -4,6 +4,7 @@ import {
   View, Text, StyleSheet, Modal, TouchableOpacity,
   ScrollView, ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ratingService } from '../services/api';
 
@@ -23,6 +24,7 @@ const StarRow = ({ stars }: { stars: number }) => (
 );
 
 const RatingsModal = ({ visible, onClose, busId, busName }: Props) => {
+  const insets = useSafeAreaInsets();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
@@ -43,7 +45,7 @@ const RatingsModal = ({ visible, onClose, busId, busName }: Props) => {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: insets.bottom > 0 ? insets.bottom : 16 }]}>
           {/* Handle */}
           <View style={styles.handle} />
 

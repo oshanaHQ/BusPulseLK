@@ -4,7 +4,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   TouchableOpacity,
   Modal,
@@ -13,6 +12,7 @@ import {
   Alert,
   StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { userService, busService } from '../../services/api';
@@ -33,6 +33,7 @@ interface StaffUser {
 }
 
 const ManageStaff = () => {
+  const insets = useSafeAreaInsets();
   const [buses, setBuses] = useState<Bus[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchModalVisible, setSearchModalVisible] = useState(false);
@@ -166,7 +167,7 @@ const ManageStaff = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
 
       <View style={styles.header}>
@@ -246,7 +247,7 @@ const ManageStaff = () => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 

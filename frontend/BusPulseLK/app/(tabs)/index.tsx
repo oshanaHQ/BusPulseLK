@@ -5,13 +5,14 @@ import {
   Text, 
   StyleSheet, 
   ActivityIndicator,
-  SafeAreaView,
   StatusBar
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 export default function Index() {
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -28,7 +29,7 @@ export default function Index() {
     return (
       <>
         <StatusBar backgroundColor="#000000" barStyle="light-content" />
-        <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
           <View style={styles.content}>
             <Ionicons 
               name="bus" 
@@ -47,7 +48,7 @@ export default function Index() {
             color="#FF6200" 
             style={styles.loader}
           />
-        </SafeAreaView>
+        </View>
       </>
     );
   }

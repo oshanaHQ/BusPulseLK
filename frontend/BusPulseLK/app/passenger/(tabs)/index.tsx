@@ -117,7 +117,7 @@ const PassengerDashboard = () => {
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Passenger Dashboard</Text>
-          <Text style={styles.subtitle}>Welcome, {isGuest ? user?.fullName : (user?.fullName ?? 'Passenger')}</Text>
+          <Text style={styles.subtitle}>{isGuest ? '🗺️ Exploring as Guest' : `Welcome, ${user?.fullName ?? 'Passenger'}`}</Text>
         </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
           <Ionicons name="log-out-outline" size={20} color="#FF6200" />

@@ -4,7 +4,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
@@ -12,6 +11,7 @@ import {
   StatusBar,
   RefreshControl,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { busService } from '../../services/api';
@@ -27,6 +27,7 @@ interface Bus {
 }
 
 const BusApprovals = () => {
+  const insets = useSafeAreaInsets();
   const [buses, setBuses] = useState<Bus[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -99,7 +100,7 @@ const BusApprovals = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
       
       <View style={styles.header}>
@@ -131,7 +132,7 @@ const BusApprovals = () => {
           }
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 

@@ -6,19 +6,20 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { authService, AuthUser } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
 const LoginScreen = () => {
+  const insets = useSafeAreaInsets();
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -54,7 +55,7 @@ const LoginScreen = () => {
   return (
     <>
       <StatusBar backgroundColor="#000000" barStyle="light-content" />
-      <SafeAreaView style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardAvoid}
@@ -151,7 +152,7 @@ const LoginScreen = () => {
             </Text>
           </View>
         </KeyboardAvoidingView>
-      </SafeAreaView>
+      </View>
     </>
   );
 };

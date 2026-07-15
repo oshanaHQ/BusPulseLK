@@ -4,7 +4,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   TouchableOpacity,
   Modal,
@@ -14,6 +13,7 @@ import {
   Alert,
   StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { busService } from '../../services/api';
@@ -28,6 +28,7 @@ interface Bus {
 }
 
 const ManageBuses = () => {
+  const insets = useSafeAreaInsets();
   const { openAdd } = useLocalSearchParams();
   const [buses, setBuses] = useState<Bus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -174,7 +175,7 @@ const ManageBuses = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
       
       <View style={styles.header}>
@@ -287,7 +288,7 @@ const ManageBuses = () => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
