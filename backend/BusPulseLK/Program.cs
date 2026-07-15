@@ -71,6 +71,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<BusPulseLK.Hubs.BusHub>("/hubs/bus");
+app.MapGet("/", () => "API is healthy!");
 
 // ── Seed Admin User ────────────────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())
