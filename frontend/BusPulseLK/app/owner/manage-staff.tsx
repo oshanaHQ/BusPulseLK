@@ -65,8 +65,18 @@ const ManageStaff = () => {
     if (!searchQuery.trim()) return;
     try {
       setSearching(true);
-      const data = await userService.searchStaff(selectedRole, searchQuery);
-      setSearchResults(data as StaffUser[]);
+      // Fetch both roles simultaneously since workers can act as both
+      const [drivers, conductors] = await Promise.all([
+        userService.searchStaff('Driver', searchQuery).catch(() => []),
+        userService.searchStaff('Conductor', searchQuery).catch(() => [])
+      ]);
+      
+      const merged = [...(drivers as StaffUser[]), ...(conductors as StaffUser[])];
+      
+      // Remove any duplicate users by ID
+      const unique = merged.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+      
+      setSearchResults(unique);
     } catch (error: any) {
       Alert.alert('Error', error.message);
     } finally {
