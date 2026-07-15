@@ -167,7 +167,7 @@ const ManageStaff = () => {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
 
       <View style={styles.header}>
@@ -200,7 +200,7 @@ const ManageStaff = () => {
       {/* Search Modal */}
       <Modal visible={searchModalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : 20 }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Find {selectedRole}</Text>
               <TouchableOpacity onPress={() => setSearchModalVisible(false)}>

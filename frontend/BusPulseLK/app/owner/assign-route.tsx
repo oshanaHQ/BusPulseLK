@@ -264,7 +264,7 @@ const AssignRoute = () => {
   const selectedRoute = routes.find(r => r.id === selectedRouteId);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
       
       <View style={styles.header}>
@@ -317,7 +317,7 @@ const AssignRoute = () => {
         transparent={true}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : 20 }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{editingId ? 'Edit Assignment' : 'New Assignment'}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>

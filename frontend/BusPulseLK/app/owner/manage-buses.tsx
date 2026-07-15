@@ -175,7 +175,7 @@ const ManageBuses = () => {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="light-content" />
       
       <View style={styles.header}>
@@ -215,7 +215,7 @@ const ManageBuses = () => {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : 20 }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{editingBus ? 'Edit Bus' : 'Register Bus'}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
