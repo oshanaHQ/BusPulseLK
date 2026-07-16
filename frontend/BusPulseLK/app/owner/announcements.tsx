@@ -8,7 +8,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, router } from 'expo-router';
-import { announcementService } from '../../services/api';
+import { announcementService, busService } from '../../services/api';
 
 const typeColors: Record<string, string> = {
   General: '#FF6200',
@@ -28,6 +28,7 @@ const OwnerAnnouncementsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [isAssignedToRoute, setIsAssignedToRoute] = useState(true);
 
   // Form state
   const [createModal, setCreateModal] = useState(false);
@@ -39,8 +40,17 @@ const OwnerAnnouncementsScreen = () => {
     if (!numBusId) return;
     try {
       if (isRefresh) setRefreshing(true);
-      const data: any = await announcementService.getByBus(numBusId);
-      setAnnouncements(data);
+      
+      // Check if bus is assigned to a route
+      const routes: any = await busService.getRoutes(numBusId);
+      if (!routes || routes.length === 0) {
+        setIsAssignedToRoute(false);
+        setAnnouncements([]);
+      } else {
+        setIsAssignedToRoute(true);
+        const data: any = await announcementService.getByBus(numBusId);
+        setAnnouncements(data);
+      }
     } catch {
       setAnnouncements([]);
     } finally {
@@ -132,9 +142,11 @@ const OwnerAnnouncementsScreen = () => {
           <Text style={styles.heading}>Bus Announcements</Text>
           <Text style={styles.sub}>{busName ? `For ${busName}` : 'Manage notices for your passengers'}</Text>
         </View>
-        <TouchableOpacity onPress={() => setCreateModal(true)} style={styles.addBtn}>
-          <Ionicons name="add" size={24} color="#FFF" />
-        </TouchableOpacity>
+        {isAssignedToRoute && (
+          <TouchableOpacity onPress={() => setCreateModal(true)} style={styles.addBtn}>
+            <Ionicons name="add" size={24} color="#FFF" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {loading ? (
@@ -153,8 +165,14 @@ const OwnerAnnouncementsScreen = () => {
           ListEmptyComponent={
             <View style={styles.empty}>
               <Ionicons name="megaphone-outline" size={56} color="#222" />
-              <Text style={styles.emptyTitle}>No Announcements</Text>
-              <Text style={styles.emptyText}>Tap the + button to post an update to passengers.</Text>
+              <Text style={styles.emptyTitle}>
+                {isAssignedToRoute ? 'No Announcements' : 'Bus Not Assigned'}
+              </Text>
+              <Text style={styles.emptyText}>
+                {isAssignedToRoute 
+                  ? 'Tap the + button to post an update to passengers.' 
+                  : 'You cannot make announcements for this bus because it is not currently assigned to any route.'}
+              </Text>
             </View>
           }
         />
@@ -162,7 +180,7 @@ const OwnerAnnouncementsScreen = () => {
 
       {/* Creation Modal */}
       <Modal visible={createModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { paddingBottom: insets.bottom > 0 ? insets.bottom : 0 }]}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Post Announcement</Text>
 

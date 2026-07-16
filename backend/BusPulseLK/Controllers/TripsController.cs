@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using BusPulseLK.Data;
 using BusPulseLK.Models;
 using System.Security.Claims;
+using Microsoft.AspNetCore.SignalR;
 
 namespace BusPulseLK.Controllers
 {
@@ -12,10 +13,12 @@ namespace BusPulseLK.Controllers
     public class TripsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly Microsoft.AspNetCore.SignalR.IHubContext<BusPulseLK.Hubs.BusHub> _hubContext;
 
-        public TripsController(AppDbContext context)
+        public TripsController(AppDbContext context, Microsoft.AspNetCore.SignalR.IHubContext<BusPulseLK.Hubs.BusHub> hubContext)
         {
             _context = context;
+            _hubContext = hubContext;
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -214,6 +217,15 @@ namespace BusPulseLK.Controllers
             
             await _context.SaveChangesAsync();
 
+            // Broadcast to SignalR group
+            await _hubContext.Clients.Group($"Bus_{trip.Timetable.BusId}").SendAsync("ReceiveBusStatus", trip.Timetable.BusId.ToString(), new
+            {
+                tripId = trip.Id,
+                latitude = dto.Latitude,
+                longitude = dto.Longitude,
+                timestamp = DateTime.UtcNow.ToString("o")
+            });
+
             return Ok(new { message = "Location updated." });
         }
 
@@ -229,7 +241,12 @@ namespace BusPulseLK.Controllers
             if (userId == null) return Unauthorized();
 
             var trip = await _context.Trips
-                .Include(t => t.Timetable).ThenInclude(tt => tt.Bus)
+                .Include(t => t.Timetable)
+                    .ThenInclude(tt => tt.Bus)
+                .Include(t => t.Timetable)
+                    .ThenInclude(tt => tt.Route)
+                        .ThenInclude(r => r.Stops)
+                            .ThenInclude(s => s.Town)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (trip == null) return NotFound();
@@ -269,6 +286,42 @@ namespace BusPulseLK.Controllers
             trip.LastPassedTownId = dto.TownId;
 
             await _context.SaveChangesAsync();
+
+            // Calculate next stop and progress percent to broadcast
+            var stops = trip.IsReturnJourney
+                ? trip.Timetable.Route.Stops.OrderByDescending(s => s.StopOrder).ToList()
+                : trip.Timetable.Route.Stops.OrderBy(s => s.StopOrder).ToList();
+
+            var currentStop = stops.FirstOrDefault(s => s.TownId == dto.TownId);
+            var currentStopIndex = currentStop != null ? stops.IndexOf(currentStop) : -1;
+
+            int? nextStopId = null;
+            string nextStopName = "Destination Reached";
+            double progressPercent = 100.0;
+
+            if (currentStopIndex != -1)
+            {
+                progressPercent = ((double)(currentStopIndex + 1) / stops.Count) * 100;
+                if (currentStopIndex + 1 < stops.Count)
+                {
+                    nextStopId = stops[currentStopIndex + 1].TownId;
+                    nextStopName = stops[currentStopIndex + 1].Town.Name;
+                }
+            }
+
+            var lastStopName = currentStop?.Town?.Name ?? "Unknown Stop";
+
+            // Broadcast status via SignalR to group
+            await _hubContext.Clients.Group($"Bus_{trip.Timetable.BusId}").SendAsync("ReceiveBusStatus", trip.Timetable.BusId.ToString(), new
+            {
+                tripId = trip.Id,
+                lastStopId = dto.TownId,
+                lastStopName = lastStopName,
+                nextStopId = nextStopId,
+                nextStopName = nextStopName,
+                progressPercent = progressPercent,
+                timestamp = DateTime.UtcNow.ToString("o")
+            });
 
             return Ok(new { message = "Progress updated." });
         }
@@ -323,6 +376,13 @@ namespace BusPulseLK.Controllers
 
             trip.LastPassedTownId = lastProgress?.TownId;
             await _context.SaveChangesAsync();
+
+            // Broadcast rollback via SignalR to group
+            await _hubContext.Clients.Group($"Bus_{trip.Timetable.BusId}").SendAsync("ReceiveBusStatus", trip.Timetable.BusId.ToString(), new
+            {
+                rollbackTownId = townId,
+                timestamp = DateTime.UtcNow.ToString("o")
+            });
 
             return Ok(new { message = "Progress rolled back." });
         }

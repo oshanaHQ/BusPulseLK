@@ -13,7 +13,10 @@ import {
   setupNotifications,
   requestPermissions,
   ACTION_MARK_PASSED,
+  ACTION_ROLLBACK,
   setWorkerLastAction,
+  showWorkerTripNotification,
+  cancelTrackingNotification,
 } from '../services/notificationService';
 import { tripService } from '../services/api';
 import 'react-native-reanimated';
@@ -98,9 +101,53 @@ export default function RootLayout() {
       if (actionIdentifier === ACTION_MARK_PASSED && data?.tripId && data?.nextStopTownId) {
         try {
           await tripService.updateProgress(Number(data.tripId), Number(data.nextStopTownId));
-          await setWorkerLastAction({ townId: Number(data.nextStopTownId), timestamp: Date.now() });
+          await setWorkerLastAction({ townId: Number(data.nextStopTownId), type: 'passed', timestamp: Date.now() });
+
+          // Update the notification with the subsequent stop
+          if (data.stops && data.routeName && data.busId) {
+            const stopsList = data.stops as { id: number; name: string }[];
+            const currentIndex = stopsList.findIndex(s => s.id === Number(data.nextStopTownId));
+            const nextIndex = currentIndex + 1;
+
+            if (nextIndex < stopsList.length) {
+              await showWorkerTripNotification(
+                data.routeName,
+                stopsList[nextIndex].name,
+                Number(data.tripId),
+                stopsList[nextIndex].id,
+                Number(data.busId),
+                stopsList
+              );
+            } else {
+              await cancelTrackingNotification();
+            }
+          }
         } catch (e) {
           console.log('Error marking stop from notification:', e);
+        }
+      } else if (actionIdentifier === ACTION_ROLLBACK && data?.tripId && data?.nextStopTownId && data.stops && data.routeName && data.busId) {
+        try {
+          const stopsList = data.stops as { id: number; name: string }[];
+          const currentIndex = stopsList.findIndex(s => s.id === Number(data.nextStopTownId));
+
+          // The last passed stop that we want to rollback is at currentIndex - 1
+          if (currentIndex > 0) {
+            const rollbackTownId = stopsList[currentIndex - 1].id;
+            await tripService.rollbackProgress(Number(data.tripId), rollbackTownId);
+            await setWorkerLastAction({ townId: rollbackTownId, type: 'rollback', timestamp: Date.now() });
+
+            // We rolled back the progress, so the new "nextStopTownId" is the one we just rolled back
+            await showWorkerTripNotification(
+              data.routeName,
+              stopsList[currentIndex - 1].name,
+              Number(data.tripId),
+              rollbackTownId,
+              Number(data.busId),
+              stopsList
+            );
+          }
+        } catch (e) {
+          console.log('Error rolling back stop from notification:', e);
         }
       }
     });

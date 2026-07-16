@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ── Base URL ──────────────────────────────────────────────────────────────────
 // Change this to your machine's local IP when testing on a physical device.
-export const API_BASE_URL = 'https://buspulselk.f.jrnm.app/api';
+export const API_BASE_URL = 'http://10.174.202.49:5251/api';
 
 // ── Token helper ──────────────────────────────────────────────────────────────
 
@@ -253,7 +253,7 @@ export const routeService = {
 // ── Bus service ───────────────────────────────────────────────────────────────
 
 export const busService = {
-  getAll: () => apiGet('/buses'),
+  getAll: (activeOnly = true) => apiGet(`/buses?activeOnly=${activeOnly}`),
   getMine: () => apiGet('/buses/mine'),
   getPending: () => apiGet('/buses/pending'),
   getById: (id: number) => apiGet(`/buses/${id}`),

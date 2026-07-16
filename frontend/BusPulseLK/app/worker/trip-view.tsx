@@ -77,15 +77,19 @@ const TripView = () => {
     };
   }, []);
 
-  // Listen for AppState changes to sync background "Mark Passed" actions
+  // Listen for AppState changes to sync background "Mark Passed" and rollback actions
   useEffect(() => {
     const subscription = AppState.addEventListener('change', async (nextAppState) => {
       if (nextAppState === 'active') {
         const lastAction = await getWorkerLastAction();
         if (lastAction && stops.length > 0) {
           const index = stops.findIndex(s => s.town.id === lastAction.townId);
-          if (index !== -1 && index > currentStopIndex) {
-            setCurrentStopIndex(index);
+          if (index !== -1) {
+            if (lastAction.type === 'rollback') {
+              setCurrentStopIndex(index - 1);
+            } else if (index > currentStopIndex) {
+              setCurrentStopIndex(index);
+            }
           }
           await clearWorkerLastAction();
         }
@@ -116,7 +120,17 @@ const TripView = () => {
       if (result.length > 0) {
         const place = result[0];
         const address = [place.street || place.name, place.city || place.subregion || place.district].filter(Boolean).join(', ');
-        setCurrentAddress(address || 'Unknown Location');
+        const finalAddress = address || 'Unknown Location';
+        setCurrentAddress(finalAddress);
+        // Refresh the live notification with the new address
+        if (tripId) {
+          await showAutoWorkerNotification(
+            routeName as string,
+            Number(busId),
+            Number(timetableId),
+            finalAddress,
+          );
+        }
       }
     } catch (error) {
       console.log('Reverse geocode error:', error);
@@ -180,7 +194,9 @@ const TripView = () => {
               routeName as string,
               stopsList[nextIndex].town.name,
               tripData.id,
-              stopsList[nextIndex].town.id
+              stopsList[nextIndex].town.id,
+              Number(busId),
+              stopsList.map(s => ({ id: s.town.id, name: s.town.name }))
             );
           }
         }
@@ -309,7 +325,9 @@ const TripView = () => {
           routeName as string,
           stops[index + 1].town.name,
           tripId,
-          stops[index + 1].town.id
+          stops[index + 1].town.id,
+          Number(busId),
+          stops.map(s => ({ id: s.town.id, name: s.town.name }))
         );
       } else if (index + 1 >= stops.length) {
         await cancelTrackingNotification();
@@ -356,7 +374,9 @@ const TripView = () => {
                   routeName as string,
                   stops[index].town.name,
                   tripId,
-                  stops[index].town.id
+                  stops[index].town.id,
+                  Number(busId),
+                  stops.map(s => ({ id: s.town.id, name: s.town.name }))
                 );
               }
             } catch (error: any) {

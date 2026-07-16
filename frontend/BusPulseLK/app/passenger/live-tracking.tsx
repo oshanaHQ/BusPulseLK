@@ -108,9 +108,7 @@ const LiveTrackingScreen = () => {
       const busName = (ttData as any)?.bus?.name || (ttData as any)?.bus?.numberPlate || `Bus ${busId}`;
       await setActiveTracking({ busId: Number(busId), timetableId: ttId, busName });
 
-      if (data.trackingMode === 'Automatic') {
-        await showAutoPassengerNotification(busName, Number(busId), ttId || 0);
-      } else {
+      if (data.trackingMode !== 'Automatic') {
         await showPassengerTrackingNotification(
           busName,
           initialStatus.nextStopName,
@@ -169,16 +167,22 @@ const LiveTrackingScreen = () => {
   }, [status?.latitude, status?.longitude, status?.trackingMode]);
 
   const reverseGeocode = async (lat: number, lon: number) => {
+    let finalAddress = 'Unknown Location';
     try {
       const result = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
-      if (result.length > 0) {
+      if (result && result.length > 0) {
         const place = result[0];
         const address = [place.street || place.name, place.city || place.subregion || place.district].filter(Boolean).join(', ');
-        setCurrentAddress(address || 'Unknown Location');
+        finalAddress = address || 'Unknown Location';
       }
     } catch (error) {
       console.log('Reverse geocode error:', error);
-      setCurrentAddress('Location unavailable');
+      finalAddress = 'Location unavailable';
+    } finally {
+      setCurrentAddress(finalAddress);
+      const busName = (timetable as any)?.bus?.name || (timetable as any)?.bus?.numberPlate || `Bus ${busId}`;
+      const ttId = timetableId ? Number(timetableId) : trip?.timetableId;
+      await showAutoPassengerNotification(busName, Number(busId), ttId || 0, finalAddress);
     }
   };
 

@@ -17,6 +17,7 @@ const CAT_TRACKING = 'TRACKING';
 
 // Action identifier
 export const ACTION_MARK_PASSED = 'MARK_PASSED';
+export const ACTION_ROLLBACK = 'ROLLBACK_STOP';
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
@@ -37,13 +38,15 @@ export async function setupNotifications(): Promise<void> {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(TRACKING_CHANNEL_ID, {
       name: 'Bus Tracking',
-      importance: Notifications.AndroidImportance.LOW,
+      importance: Notifications.AndroidImportance.DEFAULT,
       vibrationPattern: [0],
+      lightColor: '#FF6200',
     });
     await Notifications.setNotificationChannelAsync(WORKER_CHANNEL_ID, {
       name: 'Trip Updates',
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250],
+      lightColor: '#FF6200',
     });
   }
 
@@ -51,7 +54,12 @@ export async function setupNotifications(): Promise<void> {
   await Notifications.setNotificationCategoryAsync(CAT_WORKER_MANUAL, [
     {
       identifier: ACTION_MARK_PASSED,
-      buttonTitle: '✅ Mark Passed',
+      buttonTitle: 'Mark as Passed',
+      options: { opensAppToForeground: false },
+    },
+    {
+      identifier: ACTION_ROLLBACK,
+      buttonTitle: 'Undo Last Stop',
       options: { opensAppToForeground: false },
     },
   ]);
@@ -98,14 +106,19 @@ export async function showAutoPassengerNotification(
   busName: string,
   busId: number,
   timetableId: number,
+  currentAddress?: string,
 ): Promise<void> {
   const existing = await AsyncStorage.getItem(TRACKING_NOTIF_ID_KEY);
   if (existing) await Notifications.dismissNotificationAsync(existing);
 
+  const body = currentAddress
+    ? `${busName} • On: ${currentAddress}`
+    : `Tracking ${busName} in real-time`;
+
   const id = await Notifications.scheduleNotificationAsync({
     content: {
-      title: `🚌 Live Tracking Active`,
-      body: `Tracking ${busName} in real-time`,
+      title: `Live Tracking Active`,
+      body,
       sticky: true,
       data: { type: 'auto_passenger', busId, timetableId },
       categoryIdentifier: CAT_TRACKING,
@@ -125,6 +138,8 @@ export async function showWorkerTripNotification(
   nextStopName: string,
   tripId: number,
   nextStopTownId: number,
+  busId?: number,
+  stops?: { id: number; name: string }[],
 ): Promise<void> {
   const existing = await AsyncStorage.getItem(TRACKING_NOTIF_ID_KEY);
   if (existing) await Notifications.dismissNotificationAsync(existing);
@@ -134,7 +149,14 @@ export async function showWorkerTripNotification(
       title: `🗺️ ${routeName}`,
       body: `Next: ${nextStopName}`,
       sticky: true,
-      data: { type: 'worker_manual', tripId, nextStopTownId, routeName },
+      data: {
+        type: 'worker_manual',
+        tripId,
+        nextStopTownId,
+        routeName,
+        busId,
+        stops,
+      },
       categoryIdentifier: CAT_WORKER_MANUAL,
       ...(Platform.OS === 'android' ? { channelId: WORKER_CHANNEL_ID } : {}),
     },
@@ -149,14 +171,19 @@ export async function showAutoWorkerNotification(
   routeName: string,
   busId: number,
   timetableId: number,
+  currentAddress?: string,
 ): Promise<void> {
   const existing = await AsyncStorage.getItem(TRACKING_NOTIF_ID_KEY);
   if (existing) await Notifications.dismissNotificationAsync(existing);
 
+  const body = currentAddress
+    ? `On: ${currentAddress}`
+    : `Transmitting location for ${routeName}`;
+
   const id = await Notifications.scheduleNotificationAsync({
     content: {
-      title: `📍 GPS Tracking Active`,
-      body: `Transmitting location for ${routeName}`,
+      title: `GPS Tracking Active`,
+      body,
       sticky: true,
       data: { type: 'auto_worker', busId, timetableId, routeName },
       categoryIdentifier: CAT_TRACKING,
@@ -206,6 +233,7 @@ export async function clearActiveTracking(): Promise<void> {
 export interface WorkerLastAction {
   townId: number;
   timestamp: number;
+  type?: 'passed' | 'rollback';
 }
 
 export async function setWorkerLastAction(data: WorkerLastAction): Promise<void> {

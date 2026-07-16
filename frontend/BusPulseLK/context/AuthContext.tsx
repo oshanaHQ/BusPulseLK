@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthUser } from '../services/api';
+import { cancelTrackingNotification, clearActiveTracking } from '../services/notificationService';
 
 // Re-export so other files can import from here too
 export type { AuthUser } from '../services/api';
@@ -82,6 +83,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Clear everything
   const logout = async () => {
+    try {
+      await cancelTrackingNotification();
+      await clearActiveTracking();
+    } catch (e) {
+      console.log('Error clearing notifications/tracking on logout:', e);
+    }
     await Promise.all([
       AsyncStorage.removeItem(TOKEN_KEY),
       AsyncStorage.removeItem(USER_KEY),
