@@ -13,6 +13,7 @@ import {
   AppState,
   Modal,
   TextInput,
+  DeviceEventEmitter,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -26,6 +27,8 @@ import {
   cancelTrackingNotification,
   getWorkerLastAction,
   clearWorkerLastAction,
+  ACTION_MARK_PASSED,
+  ACTION_ROLLBACK,
 } from '../../services/notificationService';
 
 interface Stop {
@@ -98,6 +101,26 @@ const TripView = () => {
 
     return () => {
       subscription.remove();
+    };
+  }, [stops, currentStopIndex]);
+
+  // Listen for instant notification actions when shade is open and app is active
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('NotificationActionTriggered', (event) => {
+      if (stops.length > 0) {
+        const index = stops.findIndex(s => s.town.id === event.townId);
+        if (index !== -1) {
+          if (event.action === ACTION_ROLLBACK) {
+            setCurrentStopIndex(index - 1);
+          } else {
+            setCurrentStopIndex(index);
+          }
+        }
+      }
+    });
+
+    return () => {
+      sub.remove();
     };
   }, [stops, currentStopIndex]);
 

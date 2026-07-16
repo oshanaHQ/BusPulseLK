@@ -307,7 +307,7 @@ const SearchScreen = () => {
       {/* Guest name + logout button */}
       {isGuest && (
         <View style={styles.guestNameRow}>
-          <Text style={styles.guestNameText}>Welcome, {user?.fullName}</Text>
+          <Text style={styles.guestNameText}>Exploring as Guest</Text>
           <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
             <Ionicons name="log-out-outline" size={20} color="#FF6200" />
           </TouchableOpacity>

@@ -2,7 +2,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { ActivityIndicator, View, LogBox } from 'react-native';
+import { ActivityIndicator, View, LogBox, DeviceEventEmitter } from 'react-native';
 
 LogBox.ignoreLogs([
   'expo-notifications: Android Push notifications',
@@ -102,6 +102,10 @@ export default function RootLayout() {
         try {
           await tripService.updateProgress(Number(data.tripId), Number(data.nextStopTownId));
           await setWorkerLastAction({ townId: Number(data.nextStopTownId), type: 'passed', timestamp: Date.now() });
+          DeviceEventEmitter.emit('NotificationActionTriggered', {
+            action: actionIdentifier,
+            townId: Number(data.nextStopTownId),
+          });
 
           // Update the notification with the subsequent stop
           if (data.stops && data.routeName && data.busId) {
@@ -135,6 +139,10 @@ export default function RootLayout() {
             const rollbackTownId = stopsList[currentIndex - 1].id;
             await tripService.rollbackProgress(Number(data.tripId), rollbackTownId);
             await setWorkerLastAction({ townId: rollbackTownId, type: 'rollback', timestamp: Date.now() });
+            DeviceEventEmitter.emit('NotificationActionTriggered', {
+              action: actionIdentifier,
+              townId: rollbackTownId,
+            });
 
             // We rolled back the progress, so the new "nextStopTownId" is the one we just rolled back
             await showWorkerTripNotification(
