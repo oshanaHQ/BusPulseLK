@@ -70,8 +70,15 @@ async function apiPut<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `PUT ${path} failed (${res.status})`);
+    const text = await res.text();
+    let message: string;
+    try {
+      const err = JSON.parse(text);
+      message = err.message || err.title || text;
+    } catch {
+      message = text;
+    }
+    throw new Error(message || `PUT ${path} failed (${res.status})`);
   }
   if (res.status === 204) return {} as T;
   return res.json();
