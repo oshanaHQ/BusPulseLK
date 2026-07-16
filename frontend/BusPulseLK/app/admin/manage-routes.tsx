@@ -230,7 +230,7 @@ const ManageRoutes = () => {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{editingRoute ? 'Edit Route' : 'New Route'}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
