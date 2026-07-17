@@ -270,6 +270,9 @@ const SearchScreen = () => {
                           {i < scheduleData.stationTimes.length - 1 && <View style={styles.scheduleLine} />}
                         </View>
                         <View style={styles.scheduleRowContent}>
+                          <Text style={{ color: '#FFF', fontSize: 15, flex: 1 }} numberOfLines={1}>
+                            {towns.find(t => t.id === st.townId)?.name || 'Unknown Stop'}
+                          </Text>
                           <Text style={styles.scheduleTime}>{st.expectedTime}</Text>
                           {st.isReturnJourney && (
                             <View style={styles.returnBadge}>
